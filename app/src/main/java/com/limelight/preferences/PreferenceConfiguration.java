@@ -1,5 +1,8 @@
 package com.limelight.preferences;
 
+import com.limelight.artemis.TvDisplay;
+import com.limelight.artemis.TvMode;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -7,6 +10,7 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 import android.view.Display;
 
+import com.limelight.LimeLog;
 import com.limelight.nvstream.jni.MoonBridge;
 
 public class PreferenceConfiguration {
@@ -70,8 +74,10 @@ public class PreferenceConfiguration {
     private static final String GAMEPAD_MOTION_SENSORS_PREF_STRING = "checkbox_gamepad_motion_sensors";
     private static final String GAMEPAD_MOTION_FALLBACK_PREF_STRING = "checkbox_gamepad_motion_fallback";
 
-    static final String DEFAULT_RESOLUTION = "1280x720";
-    static final String DEFAULT_FPS = "60";
+    // Artemis: "Match this TV" (TvMode) is the default; installs still on upstream's 1280x720 at 60 move to it once
+    static final String DEFAULT_RESOLUTION = TvMode.MATCH;
+    static final String DEFAULT_FPS = TvMode.MATCH;
+    private static final String MATCH_TV_MIGRATED_PREF_STRING = "artemis_match_tv_migrated";
     private static final boolean DEFAULT_STRETCH = false;
     private static final boolean DEFAULT_SOPS = true;
     private static final boolean DEFAULT_DISABLE_TOASTS = false;
@@ -122,6 +128,8 @@ public class PreferenceConfiguration {
     public static final String RES_1440P = "2560x1440";
     public static final String RES_4K = "3840x2160";
     public static final String RES_NATIVE = "Native";
+    /** The resolution and FPS lists' "Match this TV" value. */
+    public static final String RES_MATCH_TV = TvMode.MATCH, FPS_MATCH_TV = TvMode.MATCH;
 
     public int width, height, fps;
     public int bitrate;
@@ -258,10 +266,64 @@ public class PreferenceConfiguration {
         }
     }
 
+    /** The width, height and FPS the stored strings mean on this TV ("Match this TV" reads the display). */
+    public static int[] resolveMode(Context context, String resString, String fpsString) {
+        TvMode.Choice tv = null;
+        if (RES_MATCH_TV.equals(resString) || FPS_MATCH_TV.equals(fpsString)) {
+            tv = TvDisplay.choose(context);
+        }
+        int width, height, fps;
+        if (RES_MATCH_TV.equals(resString)) {
+            width = tv.width;
+            height = tv.height;
+        }
+        else {
+            if (!resString.contains("x")) {
+                resString = convertFromLegacyResolutionString(resString);
+            }
+            width = getWidthFromResolutionString(resString);
+            height = getHeightFromResolutionString(resString);
+        }
+        fps = FPS_MATCH_TV.equals(fpsString) ? tv.fps : Integer.parseInt(fpsString);
+        return new int[] {width, height, fps};
+    }
+
+    public static int getDefaultBitrate(Context context, String resString, String fpsString) {
+        int[] mode = resolveMode(context, resString, fpsString);
+        return getDefaultBitrate(mode[0], mode[1], mode[2]);
+    }
+
+    /**
+     * Artemis: moves an install still on upstream's default (720p at 60 FPS, which PcView writes at the first start)
+     * to "Match this TV", once; a bitrate left on that default is cleared so it follows the TV's mode too.
+     */
+    static void migrateToMatchTv(Context context, SharedPreferences prefs) {
+        if (prefs.getBoolean(MATCH_TV_MIGRATED_PREF_STRING, false)) {
+            return;
+        }
+        String res = prefs.getString(RESOLUTION_PREF_STRING, null);
+        String fps = prefs.getString(FPS_PREF_STRING, null);
+        String newRes = TvMode.migrateResolution(res), newFps = TvMode.migrateFps(fps);
+        SharedPreferences.Editor edit = prefs.edit()
+                .putString(RESOLUTION_PREF_STRING, newRes)
+                .putString(FPS_PREF_STRING, newFps)
+                .putBoolean(MATCH_TV_MIGRATED_PREF_STRING, true);
+        int bitrate = prefs.getInt(BITRATE_PREF_STRING, 0);
+        if (bitrate != 0 && res != null && fps != null && res.contains("x") && !fps.equals(FPS_MATCH_TV)
+                && bitrate == getDefaultBitrate(getWidthFromResolutionString(res), getHeightFromResolutionString(res),
+                        Integer.parseInt(fps))) {
+            edit.remove(BITRATE_PREF_STRING);
+        }
+        edit.apply();
+        LimeLog.info("Match this TV: resolution " + res + " -> " + newRes + ", FPS " + fps + " -> " + newFps);
+    }
+
     public static int getDefaultBitrate(String resString, String fpsString) {
-        int width = getWidthFromResolutionString(resString);
-        int height = getHeightFromResolutionString(resString);
-        int fps = Integer.parseInt(fpsString);
+        return getDefaultBitrate(getWidthFromResolutionString(resString), getHeightFromResolutionString(resString),
+                Integer.parseInt(fpsString));
+    }
+
+    public static int getDefaultBitrate(int width, int height, int fps) {
 
         // This logic is shamelessly stolen from Moonlight Qt:
         // https://github.com/moonlight-stream/moonlight-qt/blob/master/app/settings/streamingpreferences.cpp
@@ -343,7 +405,7 @@ public class PreferenceConfiguration {
 
     public static int getDefaultBitrate(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        return getDefaultBitrate(
+        return getDefaultBitrate(context,
                 prefs.getString(RESOLUTION_PREF_STRING, DEFAULT_RESOLUTION),
                 prefs.getString(FPS_PREF_STRING, DEFAULT_FPS));
     }
@@ -516,17 +578,19 @@ public class PreferenceConfiguration {
         }
         else {
             // Use the new preference location
+            migrateToMatchTv(context, prefs);
             String resStr = prefs.getString(RESOLUTION_PREF_STRING, PreferenceConfiguration.DEFAULT_RESOLUTION);
 
             // Convert legacy resolution strings to the new style
-            if (!resStr.contains("x")) {
+            if (!resStr.equals(RES_MATCH_TV) && !resStr.contains("x")) {
                 resStr = PreferenceConfiguration.convertFromLegacyResolutionString(resStr);
                 prefs.edit().putString(RESOLUTION_PREF_STRING, resStr).apply();
             }
 
-            config.width = PreferenceConfiguration.getWidthFromResolutionString(resStr);
-            config.height = PreferenceConfiguration.getHeightFromResolutionString(resStr);
-            config.fps = Integer.parseInt(prefs.getString(FPS_PREF_STRING, PreferenceConfiguration.DEFAULT_FPS));
+            int[] mode = resolveMode(context, resStr, prefs.getString(FPS_PREF_STRING, PreferenceConfiguration.DEFAULT_FPS));
+            config.width = mode[0];
+            config.height = mode[1];
+            config.fps = mode[2];
         }
 
         if (!prefs.contains(SMALL_ICONS_PREF_STRING)) {
@@ -547,7 +611,8 @@ public class PreferenceConfiguration {
         // This must happen after the preferences migration to ensure the preferences are populated
         config.bitrate = prefs.getInt(BITRATE_PREF_STRING, prefs.getInt(BITRATE_PREF_OLD_STRING, 0) * 1000);
         if (config.bitrate == 0) {
-            config.bitrate = getDefaultBitrate(context);
+            // Follows the mode chosen above (with Match this TV, the TV's)
+            config.bitrate = getDefaultBitrate(config.width, config.height, config.fps);
         }
 
         String audioConfig = prefs.getString(AUDIO_CONFIG_PREF_STRING, DEFAULT_AUDIO_CONFIG);

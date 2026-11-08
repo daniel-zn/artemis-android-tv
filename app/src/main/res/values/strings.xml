@@ -307,6 +307,9 @@
     <!-- Artemis: the session menu (Back during a session) -->
     <string name="artemis_connecting_to">Connecting to %1$s…</string>
     <string name="artemis_cancel">Cancel</string>
+    <string name="artemis_match_tv">Match this TV</string>
+    <string name="artemis_match_tv_resolution">Match this TV (%1$d×%2$d)</string>
+    <string name="artemis_match_tv_fps">Match this TV (%1$d FPS)</string>
     <string name="artemis_waking_up">Waking up %1$s…</string>
     <string name="artemis_waking_msg">It opens as soon as it\'s up.</string>
     <string name="artemis_wake_failed_title">Couldn\'t wake the PC</string>

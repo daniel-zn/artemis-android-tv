@@ -754,6 +754,11 @@ public class NvHTTP {
         return new String(hexChars);
     }
     
+    /** The launch request's mode: the size and rate the PC's (Apollo's virtual) display is made at. */
+    public static String launchMode(int width, int height, int fps) {
+        return width + "x" + height + "x" + fps;
+    }
+
     public boolean launchApp(ConnectionContext context, String verb, int appId, boolean enableHdr) throws IOException, XmlPullParserException {
         // Using an FPS value over 60 causes SOPS to default to 720p60,
         // so force it to 0 to ensure the correct resolution is set. We
@@ -779,7 +784,7 @@ public class NvHTTP {
 
         String xmlStr = openHttpConnectionToString(httpClientLongConnectNoReadTimeout, getHttpsUrl(true), verb,
             "appid=" + appId +
-            "&mode=" + context.negotiatedWidth + "x" + context.negotiatedHeight + "x" + fps +
+            "&mode=" + launchMode(context.negotiatedWidth, context.negotiatedHeight, fps) +
             "&additionalStates=1&sops=" + (enableSops ? 1 : 0) +
             "&rikey="+bytesToHex(context.riKey.getEncoded()) +
             "&rikeyid="+context.riKeyId +

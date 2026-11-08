@@ -10,14 +10,14 @@
             android:summary="@string/summary_resolution_list"
             android:entries="@array/resolution_names"
             android:entryValues="@array/resolution_values"
-            android:defaultValue="1280x720" />
+            android:defaultValue="auto" />
         <ListPreference
             android:key="list_fps"
             android:title="@string/title_fps_list"
             android:summary="@string/summary_fps_list"
             android:entries="@array/fps_names"
             android:entryValues="@array/fps_values"
-            android:defaultValue="60" />
+            android:defaultValue="auto" />
         <com.limelight.preferences.SeekBarPreference
             android:key="seekbar_bitrate_kbps"
             android:dialogMessage="@string/summary_seekbar_bitrate"

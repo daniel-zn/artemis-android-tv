@@ -84,9 +84,32 @@ pointer). A mouse is a mouse.
 | Touch controls, on-screen gamepad | ➖ | ✅ | ➖ no touch screen | ➖ |
 | Remote pointer, scroll and arrow-key modes, session menu | ➖ | ➖ | ➕ | ➕ |
 | Controllers as gamepads | ✅ | ✅ | ✅ | ✅ |
-| Settings (resolution, FPS, bitrate, codec, HDR, audio, controllers, host) | ✅ | ✅ | ✅ upstream's, defaulting to the TV's resolution | ✅ |
+| Settings (resolution, FPS, bitrate, codec, HDR, audio, controllers, host) | ✅ | ✅ | ✅ upstream's; resolution and FPS default to **Match this TV** (the TV's own mode, see "Stream mode"), with upstream's list as overrides | ✅ |
 | Try the Demo | ➖ | App Store only | ➖ App Store only | ➖ |
 | Home-screen channel / shortcuts | ➖ | quick actions | ✅ upstream's Android TV channel | ✅ |
+
+## Stream mode
+
+Apollo makes a virtual display for each session at the size and rate the launch request asks for (`mode=WxHxFPS`),
+so the client asks for the TV's own mode, as the iPhone app (its screen's pixels, its highest rate) and the Mac app
+(Auto frame rate: the display's refresh rate, snapped within 2%) do.
+
+- **Match this TV** is the first entry of both the Resolution and the FPS lists, and the default. Each session
+  reads the TV's active display mode when it starts (`TvDisplay`, picked by `TvMode`, unit-tested): the physical
+  size, turned landscape, snapped down to the nearest standard size that fits (4K, 1440p, 1080p, 720p: an odd
+  1920x1088 or 1366x768 panel gets 1080p or 720p, 4096x2160 or 8K gets 4K), capped at the largest standard size a
+  hardware HEVC or H.264 decoder takes (a decoder that doesn't even take 720p counts as unknown, as upstream does);
+  the current refresh rate, snapped (59.94 is 60), capped at 120. A TV that's matching a film's 24/25/30 Hz gets
+  its best rate from 48 to 60 at that size, else 60; a display mode that's nonsense falls back to the largest
+  sane supported one, and no modes at all to 1080p60. Upstream's resolution and FPS choices stay as overrides
+  (upstream's TV rule still keeps native entries out of the manual list).
+- **Existing installs** still on upstream's default (1280x720, 60 FPS: PcView writes it at the first start) move to
+  Match this TV once (`artemis_match_tv_migrated`), each list on its own; a chosen mode stays.
+- **Bitrate** follows the chosen mode: with Match this TV no bitrate is stored (a stored one left on the old 720p60
+  default, 10 Mbps, is cleared once), so each session uses the default for the mode it asks for (upstream's
+  formula: 20 Mbps at 1080p60, 80 Mbps at 4K60). Moving the slider stores a bitrate, which then stays.
+- HDR stays upstream's own setting; the TV's display mode switching (`Game.prepareDisplayForRendering`) is
+  upstream's and picks the TV mode for the stream's FPS.
 
 ## Decisions
 
@@ -145,11 +168,16 @@ pointer). A mouse is a mouse.
 - **Unit tests** (`app/src/test`, plain JUnit, no Android): the pointer's motion and acceleration
   (`PointerMotionTest`), the remote's keys per mode, clicks, long press, edge scrolling, hold-left, captured
   cursor (`RemoteControllerTest`), which keys are the remote's (`RemoteKeysTest`), the session menu's key combos
-  (`KeyCombosTest`), waking (`WakeFlowTest`).
+  (`KeyCombosTest`), waking (`WakeFlowTest`), Match this TV's mode picking with odd TVs and the move off
+  upstream's default (`TvModeTest`).
 - **Emulator check** (`scripts/emulator-check.sh`, on an Android TV 14 emulator): the debug build's
   `ArtemisDemoSession` (the remote and session menu with no PC; what would go to the PC is logged) is driven with
   injected keys, as the TV's remote bridge sends them: a step from the middle, click, long press = right click,
   glide, Back opens the menu on Resume, the D-pad moves the menu's focus and not the pointer, Scroll mode, Back
   resumes, Disconnect, captured-cursor relative motion; and the PC list opens with the focus on something, and a
-  focused side button wears the gold ring (gold pixels counted in a screenshot).
+  focused side button wears the gold ring (gold pixels counted in a screenshot); Settings' resolution list starts
+  with Match this TV; and the debug build's `ArtemisModeProbe` (the stored settings read as a session does, put in
+  the launch request's `mode=` as NvHTTP does) asks for the emulator's own mode, read independently from `wm size`
+  and SurfaceFlinger, with its default bitrate, for a new install and one on upstream's 720p default, while a
+  chosen 720p30 stays.
 - `.mercurius/integrate.json` runs `scripts/check.sh build|unit|emulator`.

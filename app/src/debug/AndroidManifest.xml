@@ -8,5 +8,9 @@
             android:theme="@style/StreamTheme"
             android:enableOnBackInvokedCallback="false"
             android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode" />
+        <activity
+            android:name="com.limelight.artemis.ArtemisModeProbe"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay" />
     </application>
 </manifest>

@@ -1,5 +1,8 @@
 package com.limelight.preferences;
 
+import com.limelight.artemis.TvDisplay;
+import com.limelight.artemis.TvMode;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -257,10 +260,36 @@ public class StreamSettings extends Activity {
                 fps = prefs.getString(PreferenceConfiguration.FPS_PREF_STRING, PreferenceConfiguration.DEFAULT_FPS);
             }
 
+            if (PreferenceConfiguration.RES_MATCH_TV.equals(res) || PreferenceConfiguration.FPS_MATCH_TV.equals(fps)) {
+                // Artemis: with Match this TV no bitrate is stored, so it follows the TV's mode at each session
+                prefs.edit().remove(PreferenceConfiguration.BITRATE_PREF_STRING).apply();
+                return;
+            }
             prefs.edit()
                     .putInt(PreferenceConfiguration.BITRATE_PREF_STRING,
                             PreferenceConfiguration.getDefaultBitrate(res, fps))
                     .apply();
+        }
+
+        /** Artemis: the Match this TV entries name the mode they'd use on this TV now. */
+        private void nameMatchTvEntries() {
+            TvMode.Choice tv = TvDisplay.choose(getActivity());
+            renameEntry(PreferenceConfiguration.RESOLUTION_PREF_STRING, PreferenceConfiguration.RES_MATCH_TV,
+                    getString(R.string.artemis_match_tv_resolution, tv.width, tv.height));
+            renameEntry(PreferenceConfiguration.FPS_PREF_STRING, PreferenceConfiguration.FPS_MATCH_TV,
+                    getString(R.string.artemis_match_tv_fps, tv.fps));
+        }
+
+        private void renameEntry(String key, String value, String name) {
+            ListPreference pref = (ListPreference) findPreference(key);
+            CharSequence[] entries = pref.getEntries().clone();
+            CharSequence[] values = pref.getEntryValues();
+            for (int i = 0; i < values.length; i++) {
+                if (value.equals(values[i].toString())) {
+                    entries[i] = name;
+                }
+            }
+            pref.setEntries(entries);
         }
 
         @Override
@@ -547,6 +576,7 @@ public class StreamSettings extends Activity {
                 // Never remove 30 FPS or 60 FPS
             }
             addNativeFrameRateEntry(maxSupportedFps);
+            nameMatchTvEntries();
 
             // Android L introduces the drop duplicate behavior of releaseOutputBuffer()
             // that the unlock FPS option relies on to not massively increase latency.

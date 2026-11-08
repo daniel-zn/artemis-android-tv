@@ -38,7 +38,7 @@ fails=0
 check() { # name, then the lines expected (each a regex, in order) in the log since the last mark
   local name=$1; shift
   local log; log=$(a logcat -d -s ArtemisRemote:I | sed -n 's/.*ArtemisRemote: //p' | tr -d '\r')
-  local rest=$log ok=1
+  local rest=$log ok=1 want
   for want in "$@"; do
     local line; line=$(printf '%s\n' "$rest" | grep -n -E -m1 "^($want)\$" | cut -d: -f1)
     if [ -z "$line" ]; then ok=0; break; fi
@@ -142,6 +142,39 @@ g=$(gold_in "$(bounds_of settingsButton)")
 if [ "$fid" = settingsButton ] && [ "${g:-0}" -ge 200 ]; then echo "PASS a focused side button is ringed in gold ($g gold pixels)"
 else echo "FAIL a focused side button is ringed in gold (focused: $fid, ${g:-0} gold pixels)"; fails=$((fails + 1)); fi
 a exec-out screencap -p > "$out/pc-list-settings.png"
+# Settings: the resolution list starts with Match this TV, naming the TV's mode
+key KEYCODE_DPAD_CENTER; sleep 2; key KEYCODE_DPAD_CENTER; sleep 1
+a shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+mt=$(a shell cat /sdcard/ui.xml | tr '>' '\n' | grep -o 'text="Match this TV ([^"]*)"' | head -1 | sed 's/text="//; s/"$//')
+a exec-out screencap -p > "$out/settings-resolution.png"
+[ -n "$mt" ] && echo "PASS the resolution list offers $mt" || { echo "FAIL the resolution list offers Match this TV"; fails=$((fails + 1)); }
+a shell am force-stop $pkg
+
+# Match this TV: the launch request asks for the TV's own mode (Apollo makes its virtual display at it), for a new
+# install and for one still on upstream's 720p default; a chosen mode stays. The TV's mode, read independently:
+size=$(a shell wm size | tr -d '\r' | sed -n 's/^Physical size: //p')
+hz=$(a shell dumpsys SurfaceFlinger | tr -d '\r' | sed -n 's/.*refresh-rate *: *\([0-9.]*\).*/\1/p' | head -1)
+want=$(python3 -I -c '
+import sys
+w, h = sorted(map(int, sys.argv[1].split("x")), reverse=True); hz = float(sys.argv[2] or 60)
+s = next(((a, b) for a, b in [(3840, 2160), (2560, 1440), (1920, 1080), (1280, 720)] if a <= w and b <= h), (1280, 720))
+r = next((r for r in [24, 25, 30, 48, 50, 60, 72, 75, 90, 100, 120] if abs(hz - r) <= r * 0.02), round(hz))
+f = 60 if r < 48 else min(r, 120); ff = (f if f <= 60 else (f / 60) ** 0.5 * 60) / 30
+print("%dx%dx%d %d" % (s[0], s[1], f, round({720: 5, 1080: 10, 1440: 20, 2160: 40}[s[1]] * ff) * 1000))' \
+  "${size:-1920x1080}" "${hz:-60}")
+wantbr=${want#* }; want=${want% *}
+probe() {
+  a shell am force-stop $pkg; mark
+  a shell am start -W -n $pkg/com.limelight.artemis.ArtemisModeProbe --es seed "$1" >/dev/null
+  for _ in $(seq 1 20); do a logcat -d -s ArtemisRemote:I | grep -q "launch mode=" && break; sleep 0.5; done
+}
+echo "the TV: ${size:-?} at ${hz:-?} Hz, so $want"
+probe fresh
+check "a new install's launch request asks for the TV's mode ($want, $wantbr kbps)" "launch mode=$want bitrate=$wantbr"
+probe old
+check "an install on upstream's 720p default moves to the TV's mode and bitrate" "launch mode=$want bitrate=$wantbr"
+probe manual
+check "a chosen mode stays (720p at 30 FPS, its own bitrate)" "launch mode=1280x720x30 bitrate=5000"
 a shell am force-stop $pkg
 
 echo "emulator-check: $fails failed"

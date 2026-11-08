@@ -14,6 +14,7 @@ public class SpinnerDialog implements Runnable,OnCancelListener {
     private final Activity activity;
     private ProgressDialog progress;
     private final boolean finish;
+    private String cancelLabel;
 
     private static final ArrayList<SpinnerDialog> rundownDialogs = new ArrayList<>();
 
@@ -24,6 +25,15 @@ public class SpinnerDialog implements Runnable,OnCancelListener {
         this.message = message;
         this.progress = null;
         this.finish = finish;
+    }
+
+    /** Artemis: a cancellable dialog with a focused red Cancel button (cancelling finishes the activity). */
+    public static SpinnerDialog displayDialog(Activity activity, String title, String message, String cancelLabel)
+    {
+        SpinnerDialog spinner = new SpinnerDialog(activity, title, message, true);
+        spinner.cancelLabel = cancelLabel;
+        activity.runOnUiThread(spinner);
+        return spinner;
     }
 
     public static SpinnerDialog displayDialog(Activity activity, String title, String message, boolean finish)
@@ -93,9 +103,23 @@ public class SpinnerDialog implements Runnable,OnCancelListener {
                 progress.setCancelable(false);
             }
 
+            if (finish && cancelLabel != null) {
+                progress.setButton(DialogInterface.BUTTON_NEGATIVE, cancelLabel,
+                        (d, which) -> progress.cancel());
+            }
+
             synchronized (rundownDialogs) {
                 rundownDialogs.add(this);
                 progress.show();
+            }
+
+            if (finish && cancelLabel != null) {
+                android.widget.Button cancel = progress.getButton(DialogInterface.BUTTON_NEGATIVE);
+                if (cancel != null) {
+                    cancel.setTextColor(activity.getResources().getColor(com.limelight.R.color.artemis_red));
+                    cancel.setFocusable(true);
+                    cancel.requestFocus();
+                }
             }
         }
         else

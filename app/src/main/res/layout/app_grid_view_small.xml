@@ -9,4 +9,6 @@
     android:focusable="true"
     android:focusableInTouchMode="true"
     android:clipToPadding="false"
+    android:listSelector="@drawable/artemis_grid_selector"
+    android:drawSelectorOnTop="false"
     android:gravity="center"/>

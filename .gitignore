@@ -42,3 +42,5 @@ app/.externalNativeBuild/
 
 # NDK stuff
 .cxx/
+# Per-machine settings for scripts/check.sh
+.mercurius/local.env

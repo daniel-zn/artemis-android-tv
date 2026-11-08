@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Artemis's navy and gold (the iPhone app's icon) -->
+    <color name="artemis_navy">#0C2D5A</color>
+    <color name="artemis_navy_dark">#06172F</color>
+    <color name="artemis_navy_light">#1A4378</color>
+    <color name="artemis_gold">#E8B84A</color>
+    <color name="artemis_text">#FFFFFF</color>
+    <color name="artemis_text_dim">#B8C4D6</color>
+    <color name="artemis_red">#E5484D</color>
+    <color name="artemis_panel">#F206172F</color>
+</resources>

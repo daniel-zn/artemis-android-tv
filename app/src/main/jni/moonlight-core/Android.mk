@@ -16,10 +16,12 @@ LOCAL_SRC_FILES := moonlight-common-c/src/AudioStream.c \
                    moonlight-common-c/src/FakeCallbacks.c \
                    moonlight-common-c/src/InputStream.c \
                    moonlight-common-c/src/LinkedBlockingQueue.c \
+                   moonlight-common-c/src/MicrophoneStream.c \
                    moonlight-common-c/src/Misc.c \
                    moonlight-common-c/src/Platform.c \
                    moonlight-common-c/src/PlatformCrypto.c \
                    moonlight-common-c/src/PlatformSockets.c \
+                   moonlight-common-c/src/RecorderCallbacks.c \
                    moonlight-common-c/src/RtpAudioQueue.c \
                    moonlight-common-c/src/RtpVideoQueue.c \
                    moonlight-common-c/src/RtspConnection.c \

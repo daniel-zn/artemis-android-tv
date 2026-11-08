@@ -26,6 +26,7 @@ public class StreamConfiguration {
     private int attachedGamepadMask;
     private int encryptionFlags;
     private int colorRange;
+    private boolean enableMic;
     private int colorSpace;
     private boolean persistGamepadsAfterDisconnect;
 
@@ -128,6 +129,12 @@ public class StreamConfiguration {
             return this;
         }
 
+        /** Artemis: send the microphone to an Apollo host that takes it. */
+        public StreamConfiguration.Builder setEnableMic(boolean enableMic) {
+            config.enableMic = enableMic;
+            return this;
+        }
+
         public StreamConfiguration build() {
             return config;
         }
@@ -216,6 +223,10 @@ public class StreamConfiguration {
 
     public int getColorRange() {
         return colorRange;
+    }
+
+    public boolean getEnableMic() {
+        return enableMic;
     }
 
     public int getColorSpace() {

@@ -6,6 +6,7 @@
 #include <Limelight.h>
 
 #include <opus_multistream.h>
+#include <opus.h>
 #include <android/log.h>
 
 #include <cpu-features.h>
@@ -38,6 +39,7 @@ static jmethodID BridgeClSetHdrModeMethod;
 static jmethodID BridgeClRumbleTriggersMethod;
 static jmethodID BridgeClSetMotionEventStateMethod;
 static jmethodID BridgeClSetControllerLEDMethod;
+static jmethodID BridgeClSetHostCursorCapturedMethod;
 static jbyteArray DecodedFrameBuffer;
 static jshortArray DecodedAudioBuffer;
 
@@ -102,6 +104,7 @@ Java_com_limelight_nvstream_jni_MoonBridge_init(JNIEnv *env, jclass clazz) {
     BridgeClRumbleTriggersMethod = (*env)->GetStaticMethodID(env, clazz, "bridgeClRumbleTriggers", "(SSS)V");
     BridgeClSetMotionEventStateMethod = (*env)->GetStaticMethodID(env, clazz, "bridgeClSetMotionEventState", "(SBS)V");
     BridgeClSetControllerLEDMethod = (*env)->GetStaticMethodID(env, clazz, "bridgeClSetControllerLED", "(SBBB)V");
+    BridgeClSetHostCursorCapturedMethod = (*env)->GetStaticMethodID(env, clazz, "bridgeClSetHostCursorCaptured", "(Z)V");
 }
 
 int BridgeDrSetup(int videoFormat, int width, int height, int redrawRate, void* context, int drFlags) {
@@ -389,6 +392,17 @@ void BridgeClSetControllerLED(uint16_t controllerNumber, uint8_t r, uint8_t g, u
     }
 }
 
+// Apollo's cursor state: a game captured (hid or confined) the host's cursor, or freed it.
+void BridgeClSetHostCursorCaptured(bool captured) {
+    JNIEnv* env = GetThreadEnv();
+
+    (*env)->CallStaticVoidMethod(env, GlobalBridgeClass, BridgeClSetHostCursorCapturedMethod, (jboolean)captured);
+    if ((*env)->ExceptionCheck(env)) {
+        // We will crash here
+        (*JVM)->DetachCurrentThread(JVM);
+    }
+}
+
 void BridgeClLogMessage(const char* format, ...) {
     va_list va;
     va_start(va, format);
@@ -426,6 +440,7 @@ static CONNECTION_LISTENER_CALLBACKS BridgeConnListenerCallbacks = {
         .rumbleTriggers = BridgeClRumbleTriggers,
         .setMotionEventState = BridgeClSetMotionEventState,
         .setControllerLED = BridgeClSetControllerLED,
+        .setHostCursorCaptured = BridgeClSetHostCursorCaptured,
 };
 
 static bool
@@ -461,7 +476,8 @@ Java_com_limelight_nvstream_jni_MoonBridge_startConnection(JNIEnv *env, jclass c
                                                            jint clientRefreshRateX100,
                                                            jbyteArray riAesKey, jbyteArray riAesIv,
                                                            jint videoCapabilities,
-                                                           jint colorSpace, jint colorRange) {
+                                                           jint colorSpace, jint colorRange,
+                                                           jboolean enableMic) {
     SERVER_INFORMATION serverInfo = {
             .address = (*env)->GetStringUTFChars(env, address, 0),
             .serverInfoAppVersion = (*env)->GetStringUTFChars(env, appVersion, 0),
@@ -481,7 +497,10 @@ Java_com_limelight_nvstream_jni_MoonBridge_startConnection(JNIEnv *env, jclass c
             .clientRefreshRateX100 = clientRefreshRateX100,
             .encryptionFlags = ENCFLG_AUDIO,
             .colorSpace = colorSpace,
-            .colorRange = colorRange
+            .colorRange = colorRange,
+            // Apollo extensions: the microphone (when the user turned it on) and the cursor state
+            .enableMic = enableMic,
+            .enableCursorState = true,
     };
 
     jbyte* riAesKeyBuf = (*env)->GetByteArrayElements(env, riAesKey, NULL);
@@ -517,4 +536,79 @@ Java_com_limelight_nvstream_jni_MoonBridge_startConnection(JNIEnv *env, jclass c
     }
 
     return ret;
+}
+// The microphone (Apollo's v2 microphone stream): 48 kHz mono 16-bit PCM in 20 ms frames, encoded as the Mac
+// and iPhone apps do it, sent while the host has the stream open.
+#define MIC_SAMPLE_RATE 48000
+#define MIC_FRAME_SAMPLES 960
+#define MIC_MAX_PACKET 1400
+
+static OpusEncoder* MicEncoder;
+static pthread_mutex_t MicLock = PTHREAD_MUTEX_INITIALIZER;
+
+JNIEXPORT jboolean JNICALL
+Java_com_limelight_nvstream_jni_MoonBridge_micStart(JNIEnv *env, jclass clazz) {
+    pthread_mutex_lock(&MicLock);
+    if (MicEncoder == NULL) {
+        int err;
+        MicEncoder = opus_encoder_create(MIC_SAMPLE_RATE, 1, OPUS_APPLICATION_VOIP, &err);
+        if (MicEncoder != NULL && err == OPUS_OK) {
+            opus_encoder_ctl(MicEncoder, OPUS_SET_BITRATE(64000));
+            opus_encoder_ctl(MicEncoder, OPUS_SET_VBR(1));
+            opus_encoder_ctl(MicEncoder, OPUS_SET_COMPLEXITY(10));
+            opus_encoder_ctl(MicEncoder, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
+            opus_encoder_ctl(MicEncoder, OPUS_SET_LSB_DEPTH(16));
+            opus_encoder_ctl(MicEncoder, OPUS_SET_DTX(0));
+            opus_encoder_ctl(MicEncoder, OPUS_SET_INBAND_FEC(1));
+            opus_encoder_ctl(MicEncoder, OPUS_SET_PACKET_LOSS_PERC(5));
+            opus_encoder_ctl(MicEncoder, OPUS_SET_EXPERT_FRAME_DURATION(OPUS_FRAMESIZE_20_MS));
+        } else {
+            if (MicEncoder != NULL) {
+                opus_encoder_destroy(MicEncoder);
+                MicEncoder = NULL;
+            }
+            __android_log_print(ANDROID_LOG_ERROR, "Artemis", "opus_encoder_create failed: %d", err);
+        }
+    }
+    jboolean ok = MicEncoder != NULL;
+    pthread_mutex_unlock(&MicLock);
+    return ok;
+}
+
+// One 20 ms frame (960 samples). Returns the bytes sent, 0 while the host's stream isn't open, < 0 on errors.
+JNIEXPORT jint JNICALL
+Java_com_limelight_nvstream_jni_MoonBridge_micSendFrame(JNIEnv *env, jclass clazz, jshortArray pcm) {
+    if ((*env)->GetArrayLength(env, pcm) < MIC_FRAME_SAMPLES) {
+        return -1;
+    }
+    if (!LiIsMicrophoneStreamActive()) {
+        return 0;
+    }
+    unsigned char packet[MIC_MAX_PACKET];
+    jshort samples[MIC_FRAME_SAMPLES];
+    (*env)->GetShortArrayRegion(env, pcm, 0, MIC_FRAME_SAMPLES, samples);
+
+    pthread_mutex_lock(&MicLock);
+    int len = MicEncoder != NULL ? opus_encode(MicEncoder, samples, MIC_FRAME_SAMPLES, packet, sizeof(packet)) : -1;
+    pthread_mutex_unlock(&MicLock);
+    if (len <= 0) {
+        return len < 0 ? len : 0;
+    }
+    int ret = LiSendMicrophoneOpusDataEx(packet, len, MIC_FRAME_SAMPLES);
+    return ret < 0 ? ret : len;
+}
+
+JNIEXPORT void JNICALL
+Java_com_limelight_nvstream_jni_MoonBridge_micStop(JNIEnv *env, jclass clazz) {
+    pthread_mutex_lock(&MicLock);
+    if (MicEncoder != NULL) {
+        opus_encoder_destroy(MicEncoder);
+        MicEncoder = NULL;
+    }
+    pthread_mutex_unlock(&MicLock);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_limelight_nvstream_jni_MoonBridge_isMicrophoneStreamActive(JNIEnv *env, jclass clazz) {
+    return LiIsMicrophoneStreamActive();
 }

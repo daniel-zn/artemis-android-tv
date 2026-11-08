@@ -20,4 +20,7 @@ public interface NvConnectionListener {
     void setMotionEventState(short controllerNumber, byte motionType, short reportRateHz);
 
     void setControllerLED(short controllerNumber, byte r, byte g, byte b);
+
+    /** Apollo's cursor state: a game captured (hid or confined) the PC's cursor, or freed it. */
+    default void setHostCursorCaptured(boolean captured) {}
 }

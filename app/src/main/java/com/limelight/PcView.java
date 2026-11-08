@@ -16,6 +16,7 @@ import com.limelight.nvstream.http.NvHTTP;
 import com.limelight.nvstream.http.PairingManager;
 import com.limelight.nvstream.http.PairingManager.PairState;
 import com.limelight.nvstream.wol.WakeOnLanSender;
+import com.limelight.artemis.WakeFlow;
 import com.limelight.preferences.AddComputerManually;
 import com.limelight.preferences.GlPreferences;
 import com.limelight.preferences.PreferenceConfiguration;
@@ -23,6 +24,7 @@ import com.limelight.preferences.StreamSettings;
 import com.limelight.ui.AdapterFragment;
 import com.limelight.ui.AdapterFragmentCallbacks;
 import com.limelight.utils.Dialog;
+import android.content.DialogInterface;
 import com.limelight.utils.HelpLauncher;
 import com.limelight.utils.ServerHelper;
 import com.limelight.utils.ShortcutHelper;
@@ -65,6 +67,21 @@ public class PcView extends Activity implements AdapterFragmentCallbacks {
     private ShortcutHelper shortcutHelper;
     private ComputerManagerService.ComputerManagerBinder managerBinder;
     private boolean freezeUpdates, runningPolling, inForeground, completeOnCreateCalled;
+
+    // Artemis: "Waking up <PC>…", opening the PC once its status polls see it up
+    private final WakeFlow wakeFlow = new WakeFlow();
+    private android.app.ProgressDialog wakeDialog;
+    private final android.os.Handler wakeHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable wakeTicker = new Runnable() {
+        @Override
+        public void run() {
+            if (wakeFlow.tick(android.os.SystemClock.elapsedRealtime()) == WakeFlow.Result.GAVE_UP) {
+                wakeFinished(null);
+            } else if (wakeFlow.isWaking()) {
+                wakeHandler.postDelayed(this, 1000);
+            }
+        }
+    };
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder binder) {
             final ComputerManagerService.ComputerManagerBinder localBinder =
@@ -316,6 +333,14 @@ public class PcView extends Activity implements AdapterFragmentCallbacks {
 
         inForeground = false;
         stopComputerUpdates(false);
+
+        // Leaving the PC list ends the wait for a waking PC
+        wakeFlow.cancel();
+        wakeHandler.removeCallbacks(wakeTicker);
+        if (wakeDialog != null) {
+            wakeDialog.dismiss();
+            wakeDialog = null;
+        }
     }
 
     @Override
@@ -712,7 +737,64 @@ public class PcView extends Activity implements AdapterFragmentCallbacks {
         }
     }
     
+    /** OK on an offline PC: send Wake-on-LAN, say "Waking up <PC>…", and open it once it's up. */
+    private void wakeAndOpen(final ComputerDetails computer) {
+        doWakeOnLan(computer);
+        wakeFlow.start(computer.uuid, android.os.SystemClock.elapsedRealtime());
+        if (wakeDialog != null) {
+            wakeDialog.dismiss();
+        }
+        wakeDialog = new android.app.ProgressDialog(this);
+        wakeDialog.setTitle(getString(R.string.artemis_waking_up, computer.name));
+        wakeDialog.setMessage(getString(R.string.artemis_waking_msg));
+        wakeDialog.setProgressStyle(android.app.ProgressDialog.STYLE_SPINNER);
+        wakeDialog.setCancelable(true);
+        wakeDialog.setCanceledOnTouchOutside(false);
+        wakeDialog.setButton(DialogInterface.BUTTON_NEGATIVE, getString(R.string.artemis_cancel),
+                (d, which) -> wakeDialog.cancel());
+        wakeDialog.setOnCancelListener(d -> {
+            wakeFlow.cancel();
+            wakeHandler.removeCallbacks(wakeTicker);
+        });
+        wakeDialog.show();
+        android.widget.Button cancel = wakeDialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+        if (cancel != null) {
+            cancel.setTextColor(getResources().getColor(R.color.artemis_red));
+            cancel.requestFocus();
+        }
+        wakeHandler.removeCallbacks(wakeTicker);
+        wakeHandler.postDelayed(wakeTicker, 1000);
+    }
+
+    /** The wait ended: opened (the PC's details) or gave up (null). */
+    private void wakeFinished(ComputerDetails opened) {
+        wakeHandler.removeCallbacks(wakeTicker);
+        if (wakeDialog != null) {
+            wakeDialog.dismiss();
+            wakeDialog = null;
+        }
+        if (opened == null) {
+            Dialog.displayDialog(this, getString(R.string.artemis_wake_failed_title),
+                    getString(R.string.artemis_wake_failed_msg), false);
+        } else if (opened.pairState != PairState.PAIRED) {
+            doPair(opened);
+        } else {
+            doAppList(opened, false, false);
+        }
+    }
+
     private void updateComputer(ComputerDetails details) {
+        if (wakeFlow.isWaking() && details.uuid != null && inForeground) {
+            WakeFlow.Result r = wakeFlow.onPoll(details.uuid, details.state == ComputerDetails.State.ONLINE,
+                    android.os.SystemClock.elapsedRealtime());
+            if (r == WakeFlow.Result.OPEN) {
+                // After this update is shown
+                final ComputerDetails up = details;
+                wakeHandler.post(() -> wakeFinished(up));
+            } else if (r == WakeFlow.Result.GAVE_UP) {
+                wakeHandler.post(() -> wakeFinished(null));
+            }
+        }
         ComputerObject existingEntry = null;
 
         for (int i = 0; i < pcGridAdapter.getCount(); i++) {
@@ -749,12 +831,17 @@ public class PcView extends Activity implements AdapterFragmentCallbacks {
     @Override
     public void receiveAbsListView(AbsListView listView) {
         listView.setAdapter(pcGridAdapter);
+        com.limelight.artemis.FocusLift.attach(listView);
         listView.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> arg0, View arg1, int pos,
                                     long id) {
                 ComputerObject computer = (ComputerObject) pcGridAdapter.getItem(pos);
-                if (computer.details.state == ComputerDetails.State.UNKNOWN ||
+                if (computer.details.state == ComputerDetails.State.OFFLINE &&
+                        computer.details.macAddress != null) {
+                    // Artemis: wake it and open it once it's up
+                    wakeAndOpen(computer.details);
+                } else if (computer.details.state == ComputerDetails.State.UNKNOWN ||
                     computer.details.state == ComputerDetails.State.OFFLINE) {
                     // Open the context menu if a PC is offline or refreshing
                     openContextMenu(arg1);

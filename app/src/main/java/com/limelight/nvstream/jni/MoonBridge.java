@@ -328,6 +328,12 @@ public class MoonBridge {
         }
     }
 
+    public static void bridgeClSetHostCursorCaptured(boolean captured) {
+        if (connectionListener != null) {
+            connectionListener.setHostCursorCaptured(captured);
+        }
+    }
+
     public static void setupBridge(VideoDecoderRenderer videoRenderer, AudioRenderer audioRenderer, NvConnectionListener connectionListener) {
         MoonBridge.videoRenderer = videoRenderer;
         MoonBridge.audioRenderer = audioRenderer;
@@ -348,7 +354,19 @@ public class MoonBridge {
                                               int clientRefreshRateX100,
                                               byte[] riAesKey, byte[] riAesIv,
                                               int videoCapabilities,
-                                              int colorSpace, int colorRange);
+                                              int colorSpace, int colorRange,
+                                              boolean enableMic);
+
+    /** Artemis's microphone: an Opus encoder for 48 kHz mono 20 ms frames. False if it can't be made. */
+    public static native boolean micStart();
+
+    /** One 20 ms frame (960 samples): bytes sent, 0 while the host's microphone stream isn't open, < 0 on errors. */
+    public static native int micSendFrame(short[] pcm);
+
+    public static native void micStop();
+
+    /** True once the host negotiated and opened the microphone stream. */
+    public static native boolean isMicrophoneStreamActive();
 
     public static native void stopConnection();
 

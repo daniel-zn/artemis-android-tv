@@ -6,9 +6,14 @@
         res/values-v21/styles.xml on API 21+ devices.
     -->
     <style name="AppBaseTheme" parent="android:Theme.Material">
+        <!-- Artemis: navy and gold -->
+        <item name="android:colorPrimary">@color/artemis_navy</item>
+        <item name="android:colorPrimaryDark">@color/artemis_navy_dark</item>
+        <item name="android:colorAccent">@color/artemis_gold</item>
+        <item name="android:colorBackground">@color/artemis_navy_dark</item>
         <!-- API 21 theme customizations can go here. -->
-        <item name="android:statusBarColor">#212121</item>
-        <item name="android:navigationBarColor">#212121</item>
+        <item name="android:statusBarColor">@color/artemis_navy_dark</item>
+        <item name="android:navigationBarColor">@color/artemis_navy_dark</item>
     </style>
 
 </resources>

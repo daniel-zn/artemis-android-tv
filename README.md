@@ -1,3 +1,33 @@
+# Artemis for Android TV
+
+Artemis for Android TV streams a PC's desktop, apps and games to an Android TV or Google TV, driven by the TV's
+remote. It's the TV member of the Artemis apps ([iPhone](https://github.com/daniel-zn/artemis-ios),
+[Mac](https://github.com/daniel-zn/artemis-macos)), made for [Apollo](https://github.com/daniel-zn/danielzn-Apollo)
+hosts, and a fork of Moonlight for Android (below), under the same GPL v3 licence.
+
+## About this fork
+
+- **The remote drives the PC.** During a session the D-pad moves the PC's pointer (tap for a step, keep pressing
+  to glide faster; push against an edge to scroll), OK clicks, a long press of OK right-clicks, and Back opens a
+  session menu: Resume, Keyboard, Pointer / Scroll / Arrow keys, Hold left button, Esc / Windows / Alt+Tab /
+  Ctrl+Alt+Delete, Microphone, Performance stats, Disconnect, Stop the app. When a game captures the cursor
+  (Apollo's cursor state), the D-pad moves the mouse relatively. Controllers pass through as gamepads.
+- **Apollo features:** microphone passthrough (Opus, 48 kHz mono, off by default in Settings), automatic mouse
+  mode from the cursor state; per-client permissions and display scale are set on the host.
+- **Wake-on-LAN:** OK on an offline PC wakes it ("Waking up…") and opens it once it's up.
+- **"Connecting to *PC*…"** with a red Cancel.
+- Artemis's name, icon, TV banner, navy and gold look and Orbix font; installs beside Moonlight
+  (`com.danielzn.artemis.tv`). Only the non-root build.
+
+The full spec, with what's left out and why: [docs/ARTEMIS-TV.md](docs/ARTEMIS-TV.md).
+
+**Building:** `./gradlew :app:assembleDebug` with the Android SDK and NDK 27 (`ndkVersion` in `app/build.gradle`).
+`scripts/remote-build.sh` runs Gradle on another machine with the SDK; `scripts/check.sh build|unit|emulator` are
+the checks (`scripts/emulator-check.sh` drives the remote on an Android TV emulator). GitHub Actions is off for
+this fork.
+
+---
+
 # Moonlight Android
 
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/232a8tadrrn8jv0k/branch/master?svg=true)](https://ci.appveyor.com/project/cgutman/moonlight-android/branch/master)

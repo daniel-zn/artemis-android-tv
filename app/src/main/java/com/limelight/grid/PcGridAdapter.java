@@ -65,7 +65,7 @@ public class PcGridAdapter extends GenericGridAdapter<PcView.ComputerObject> {
             prgView.setVisibility(View.INVISIBLE);
         }
 
-        txtView.setText(obj.details.name);
+        com.limelight.artemis.ArtemisFont.setText(txtView, obj.details.name);
         if (obj.details.state == ComputerDetails.State.ONLINE) {
             txtView.setAlpha(1.0f);
         }

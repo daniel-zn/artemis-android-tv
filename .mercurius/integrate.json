@@ -1,0 +1,23 @@
+{
+  "workspaces": 1,
+  "checks": [
+    {
+      "name": "build",
+      "run": "scripts/check.sh build",
+      "inputs": ["app/**", "gradle/**", "*.gradle", "gradle.properties", "gradlew", "settings.gradle", "scripts/check.sh", "scripts/remote-build.sh", "!**/*.md"],
+      "timeout": 60
+    },
+    {
+      "name": "unit",
+      "run": "scripts/check.sh unit",
+      "inputs": ["app/**", "gradle/**", "*.gradle", "gradle.properties", "gradlew", "settings.gradle", "scripts/check.sh", "scripts/remote-build.sh", "!**/*.md"],
+      "timeout": 40
+    },
+    {
+      "name": "emulator",
+      "run": "scripts/check.sh emulator",
+      "inputs": ["app/**", "gradle/**", "*.gradle", "gradle.properties", "gradlew", "settings.gradle", "scripts/**", "!**/*.md"],
+      "timeout": 60
+    }
+  ]
+}

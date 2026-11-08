@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: a pretend session for the emulator checks (scripts/emulator-check.sh) -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="com.limelight.artemis.ArtemisDemoSession"
+            android:exported="true"
+            android:theme="@style/StreamTheme"
+            android:enableOnBackInvokedCallback="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode" />
+    </application>
+</manifest>

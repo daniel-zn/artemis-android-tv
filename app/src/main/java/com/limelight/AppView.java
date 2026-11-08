@@ -312,7 +312,7 @@ public class AppView extends Activity implements AdapterFragmentCallbacks {
 
         TextView label = findViewById(R.id.appListText);
         setTitle(computerName);
-        label.setText(computerName);
+        com.limelight.artemis.ArtemisFont.setText(label, computerName);
 
         // Bind to the computer manager service
         bindService(new Intent(this, ComputerManagerService.class), serviceConnection,
@@ -626,6 +626,7 @@ public class AppView extends Activity implements AdapterFragmentCallbacks {
     @Override
     public void receiveAbsListView(AbsListView listView) {
         listView.setAdapter(appGridAdapter);
+        com.limelight.artemis.FocusLift.attach(listView);
         listView.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> arg0, View arg1, int pos,

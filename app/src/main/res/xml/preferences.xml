@@ -204,6 +204,11 @@
             android:title="@string/title_checkbox_host_audio"
             android:summary="@string/summary_checkbox_host_audio"
             android:defaultValue="false" />
+        <CheckBoxPreference
+            android:key="checkbox_artemis_mic"
+            android:title="@string/title_checkbox_artemis_mic"
+            android:summary="@string/summary_checkbox_artemis_mic"
+            android:defaultValue="false" />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/category_ui_settings"
         android:key="category_ui_settings">

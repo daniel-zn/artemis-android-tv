@@ -35,9 +35,17 @@ import com.limelight.utils.Dialog;
 import com.limelight.utils.ServerHelper;
 import com.limelight.utils.ShortcutHelper;
 import com.limelight.utils.SpinnerDialog;
+import com.limelight.artemis.ConnectionOutput;
+import com.limelight.artemis.MicCapture;
+import com.limelight.artemis.SessionMenu;
+import com.limelight.artemis.SessionRemote;
+import com.limelight.artemis.remote.KeyCombos;
+import com.limelight.artemis.remote.RemoteController;
 import com.limelight.utils.UiHelper;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.view.WindowInsets;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.PictureInPictureParams;
@@ -118,6 +126,17 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
     private NvConnection conn;
     private SpinnerDialog spinner;
+
+    // Artemis: the TV remote, its session menu (Back) and the microphone
+    private SessionRemote sessionRemote;
+    private SessionMenu sessionMenu;
+    private ConnectionOutput remoteOutput;
+    private final MicCapture micCapture = new MicCapture();
+    private boolean micMuted;
+    private String artemisHost, artemisUniqueId;
+    private int artemisPort, artemisHttpsPort;
+    private X509Certificate artemisServerCert;
+    private static final int ARTEMIS_MIC_PERMISSION_REQUEST = 4801;
     private boolean displayedFailureDialog = false;
     private boolean connecting = false;
     private boolean connected = false;
@@ -212,8 +231,13 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         setContentView(R.layout.activity_game);
 
         // Start the spinner
-        spinner = SpinnerDialog.displayDialog(this, getResources().getString(R.string.conn_establishing_title),
-                getResources().getString(R.string.conn_establishing_msg), true);
+        // Artemis: "Connecting to <PC>…" with a red Cancel (Back cancels too)
+        String connectingTo = getIntent().getStringExtra(EXTRA_PC_NAME);
+        spinner = SpinnerDialog.displayDialog(this,
+                connectingTo != null ? getString(R.string.artemis_connecting_to, connectingTo)
+                        : getResources().getString(R.string.conn_establishing_title),
+                getResources().getString(R.string.conn_establishing_msg),
+                getString(R.string.artemis_cancel));
 
         // Read the stream preferences
         prefConfig = PreferenceConfiguration.readPreferences(this);
@@ -479,6 +503,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 .setColorSpace(decoderRenderer.getPreferredColorSpace())
                 .setColorRange(decoderRenderer.getPreferredColorRange())
                 .setPersistGamepadsAfterDisconnect(!prefConfig.multiController)
+                .setEnableMic(prefConfig.enableMic)
                 .build();
 
         // Initialize the connection
@@ -488,6 +513,17 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 PlatformBinding.getCryptoProvider(this), serverCert);
         controllerHandler = new ControllerHandler(this, conn, this, prefConfig);
         keyboardTranslator = new KeyboardTranslator();
+
+        artemisHost = host;
+        artemisPort = port;
+        artemisHttpsPort = httpsPort;
+        artemisUniqueId = uniqueId;
+        artemisServerCert = serverCert;
+        setUpArtemisRemote(prefConfig.width, prefConfig.height);
+        if (prefConfig.enableMic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, ARTEMIS_MIC_PERMISSION_REQUEST);
+        }
 
         InputManager inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
         inputManager.registerInputDeviceListener(keyboardTranslator, null);
@@ -1319,6 +1355,109 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         return (byte) modifierFlags;
     }
 
+    private static boolean isMouseBack(KeyEvent event) {
+        int source = event.getSource();
+        return (source == InputDevice.SOURCE_MOUSE || source == InputDevice.SOURCE_MOUSE_RELATIVE) &&
+                event.getKeyCode() == KeyEvent.KEYCODE_BACK;
+    }
+
+    /** The on-screen keyboard is up: the remote's keys are its own. */
+    private boolean isImeShowing() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && streamView != null) {
+            WindowInsets insets = streamView.getRootWindowInsets();
+            return insets != null && insets.isVisible(WindowInsets.Type.ime());
+        }
+        return false;
+    }
+
+    private void setUpArtemisRemote(int streamWidth, int streamHeight) {
+        sessionMenu = new SessionMenu(this, new SessionMenu.Actions() {
+            @Override public void onMenuShown() { }
+            @Override public void onMenuHidden() { streamView.requestFocus(); }
+            @Override public void keyboard() { toggleKeyboard(); }
+            @Override public void setMode(RemoteController.Mode m) { sessionRemote.controller().setMode(m); }
+            @Override public void setHoldLeft(boolean hold) { sessionRemote.controller().setHoldLeft(hold); }
+            @Override public void sendKeys(KeyCombos.Combo c) { KeyCombos.send(c, remoteOutput); }
+            @Override public void setMicMuted(boolean muted) {
+                micMuted = muted;
+                micCapture.setMuted(muted);
+            }
+            @Override public void setStatsShown(boolean shown) {
+                prefConfig.enablePerfOverlay = shown;
+                performanceOverlayView.setVisibility(shown ? View.VISIBLE : View.GONE);
+            }
+            @Override public void disconnect() { finish(); }
+            @Override public void stopApp() { stopAppOnPc(); }
+        });
+        remoteOutput = new ConnectionOutput(conn, this::showSessionMenu);
+        sessionRemote = new SessionRemote(remoteOutput, sessionMenu, streamWidth, streamHeight);
+    }
+
+    private void showSessionMenu() {
+        SessionMenu.State st = new SessionMenu.State();
+        st.pcName = pcName;
+        st.appName = appName;
+        st.mode = sessionRemote.controller().getMode();
+        st.holdingLeft = sessionRemote.controller().isHoldingLeft();
+        st.micAvailable = micCapture.isRunning();
+        st.micMuted = micMuted;
+        st.statsShown = prefConfig.enablePerfOverlay;
+        sessionMenu.show(st);
+    }
+
+    /** Stop app on the PC (the session menu, after asking): quits it there, then the session ends. */
+    private void stopAppOnPc() {
+        Toast.makeText(this, getString(R.string.applist_quit_app) + " " + appName + "…", Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try {
+                NvHTTP http = new NvHTTP(new ComputerDetails.AddressTuple(artemisHost, artemisPort), artemisHttpsPort,
+                        artemisUniqueId, artemisServerCert, PlatformBinding.getCryptoProvider(Game.this));
+                http.quitApp();
+            } catch (Exception e) {
+                LimeLog.warning("Artemis: stopping the app failed: " + e);
+            }
+            runOnUiThread(this::finish);
+        }).start();
+    }
+
+    private void startArtemisMic() {
+        if (!prefConfig.enableMic || micCapture.isRunning()) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        if (micCapture.start()) {
+            micCapture.setMuted(micMuted);
+        } else {
+            LimeLog.warning("Artemis: couldn't open the microphone");
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == ARTEMIS_MIC_PERMISSION_REQUEST) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (connected) {
+                    startArtemisMic();
+                }
+            } else {
+                Toast.makeText(this, R.string.artemis_mic_no_permission, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    @Override
+    public void setHostCursorCaptured(final boolean captured) {
+        runOnUiThread(() -> {
+            if (sessionRemote != null) {
+                sessionRemote.controller().setCursorCaptured(captured);
+            }
+        });
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         return handleKeyDown(event) || super.onKeyDown(keyCode, event);
@@ -1326,6 +1465,20 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
     @Override
     public boolean handleKeyDown(KeyEvent event) {
+        // Artemis: the TV remote's keys (and the session menu's)
+        if (sessionRemote != null && !isMouseBack(event)) {
+            if (isImeShowing()) {
+                return false;
+            }
+            if (sessionRemote.onKeyDown(event)) {
+                return true;
+            }
+            if (sessionMenu.isShowing()) {
+                // Leave keys to the menu's focus
+                return false;
+            }
+        }
+
         // Pass-through virtual navigation keys
         if ((event.getFlags() & KeyEvent.FLAG_VIRTUAL_HARD_KEY) != 0) {
             return false;
@@ -1408,6 +1561,18 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
     @Override
     public boolean handleKeyUp(KeyEvent event) {
+        if (sessionRemote != null && !isMouseBack(event)) {
+            if (isImeShowing()) {
+                return false;
+            }
+            if (sessionRemote.onKeyUp(event)) {
+                return true;
+            }
+            if (sessionMenu.isShowing()) {
+                return false;
+            }
+        }
+
         // Pass-through virtual navigation keys
         if ((event.getFlags() & KeyEvent.FLAG_VIRTUAL_HARD_KEY) != 0) {
             return false;
@@ -2226,6 +2391,10 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     }
 
     private void stopConnection() {
+        micCapture.stop();
+        if (sessionRemote != null) {
+            sessionRemote.stop();
+        }
         if (connecting || connected) {
             connecting = connected = false;
             updatePipAutoEnter();
@@ -2414,6 +2583,8 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 connected = true;
                 connecting = false;
                 updatePipAutoEnter();
+
+                startArtemisMic();
 
                 // Hide the mouse cursor now after a short delay.
                 // Doing it before dismissing the spinner seems to be undone

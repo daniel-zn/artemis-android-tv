@@ -127,6 +127,9 @@ pointer). A mouse is a mouse.
   wake the PC". Leaving the PC list stops waiting. The PC's long-press menu still has Wake-on-LAN on its own.
 - **Release step:** none in integrate. There's no store; the APK is installed on the TV by hand (`adb install -r`)
   or downloaded from the repository's GitHub releases (asset `Artemis-TV.apk`, the release build).
+  Tags are `tv-<versionName>` (first: `tv-1.0`), because upstream's `v10.x` tags are in the repository too. Each
+  new release keeps the asset name `Artemis-TV.apk`, so `releases/latest/download/Artemis-TV.apk` always gets the newest
+  one. Raise versionCode for every release, and scan the built APK for personal details before uploading.
 - **Signing:** one permanent release key (the key the first installs were signed with, so updates install over
   them). It lives on the build machine and reaches Gradle as properties (`artemisTvKeystore`,
   `artemisTvKeystorePassword`, `artemisTvKeyAlias`, `artemisTvKeyPassword` in `~/.gradle/gradle.properties`);

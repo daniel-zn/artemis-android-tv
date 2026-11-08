@@ -1,12 +1,11 @@
-// Makes the TV app's launcher icon and banner from the iPhone app's Icon Composer icon
+// Makes the TV app's launcher icon from the iPhone app's Icon Composer icon
 // (artemis-ios/Artemis/AppIcon.icon), on a Mac with Xcode (Icon Composer's ictool). The PNGs are committed, so the
 // Android build doesn't need this. From the repository root:
 //   xcrun --sdk macosx swiftc -O tools/icon-images.swift -o /tmp/icon-images && /tmp/icon-images [path/to/AppIcon.icon]
 // Writes:
 //   res/mipmap-*/ic_launcher.png             the icon as Icon Composer renders it (its rounded square), 48–192 px
 //   res/mipmap-*/ic_launcher_foreground.png  the adaptive icon's art: its layers, unglassed, on transparent
-//   res/drawable-xhdpi/atv_banner.png        the Android TV banner, 320 × 180: the icon and "Artemis" in Orbix
-//   res/drawable-xxhdpi/atv_banner.png       the same, 640 × 360
+// The TV banner is made from art/artemis-banner-wide.jpg instead: tools/banner-from-image.sh.
 import AppKit
 import CoreText
 
@@ -80,31 +79,4 @@ for (name, scale) in densities {
     write(f.makeImage()!, res.appendingPathComponent("mipmap-\(name)/ic_launcher_foreground.png"))
 }
 
-// The banner: navy, the icon on the left, "Artemis" in Orbix gold.
-let font: CTFont = {
-    let url = root.appendingPathComponent("app/src/main/assets/fonts/Orbix-Regular.otf")
-    guard let descs = CTFontManagerCreateFontDescriptorsFromURL(url as CFURL) as? [CTFontDescriptor], let d = descs.first else { fail("no Orbix") }
-    return CTFontCreateWithFontDescriptor(d, 10, nil)
-}()
-for (dir, scale) in [("drawable-xhdpi", 1.0), ("drawable-xxhdpi", 2.0)] {
-    let w = Int(320 * scale), h = Int(180 * scale)
-    let c = context(w, h)
-    c.setFillColor(CGColor(srgbRed: 0.04706, green: 0.17647, blue: 0.35294, alpha: 1))
-    c.fill(CGRect(x: 0, y: 0, width: w, height: h))
-    let side = 112 * scale, x0 = 22 * scale
-    c.draw(rendered, in: CGRect(x: x0, y: (Double(h) - side) / 2, width: side, height: side))
-    let f = CTFontCreateCopyWithAttributes(font, 40 * scale, nil, nil)
-    let attrs: [NSAttributedString.Key: Any] = [.font: f, .foregroundColor: CGColor(srgbRed: 0.909, green: 0.722, blue: 0.290, alpha: 1)]
-    let line = CTLineCreateWithAttributedString(NSAttributedString(string: "Artemis", attributes: attrs))
-    let b = CTLineGetBoundsWithOptions(line, .useGlyphPathBounds)
-    let left = x0 + side + 14 * scale, room = Double(w) - left - 14 * scale
-    let fit = min(1, room / b.width)
-    c.saveGState()
-    c.translateBy(x: left + (room - b.width * fit) / 2 - b.minX * fit, y: Double(h) / 2 - (b.midY) * fit)
-    c.scaleBy(x: fit, y: fit)
-    c.textPosition = .zero
-    CTLineDraw(line, c)
-    c.restoreGState()
-    write(c.makeImage()!, res.appendingPathComponent("\(dir)/atv_banner.png"))
-}
-print("icon-images: ic_launcher, ic_launcher_foreground and atv_banner from \(icon.path)")
+print("icon-images: ic_launcher and ic_launcher_foreground from \(icon.path)")

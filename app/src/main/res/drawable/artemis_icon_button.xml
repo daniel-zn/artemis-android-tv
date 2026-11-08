@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The PC list's side buttons (Settings, Help, Add PC): ringed in gold when focused, like the PC tiles. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <solid android:color="@color/artemis_navy_light" />
+            <stroke android:width="3dp" android:color="@color/artemis_gold" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="14dp" />
+            <solid android:color="@color/artemis_navy_light" />
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</selector>

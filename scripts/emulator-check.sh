@@ -56,6 +56,30 @@ focused() { # the focused view's text, from uiautomator
   a shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
   a shell cat /sdcard/ui.xml | tr '>' '\n' | grep 'focused="true"' | grep -o 'text="[^"]*"' | head -1 | sed 's/text="//; s/"$//'
 }
+focused_id() { # the focused view's resource id (without the package)
+  a shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+  a shell cat /sdcard/ui.xml | tr '>' '\n' | grep 'focused="true"' | grep -o 'resource-id="[^"]*"' | head -1 | sed 's/.*:id\///; s/"$//'
+}
+bounds_of() { # "x1 y1 x2 y2" of the view with that id
+  a shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+  a shell cat /sdcard/ui.xml | tr '>' '\n' | grep "id/$1\"" | grep -o 'bounds="[^"]*"' | head -1 | tr -c '0-9\n' ' '
+}
+gold_in() { # how many of the screen's pixels in "x1 y1 x2 y2" are Artemis gold (#E8B84A, give or take)
+  [ -n "$1" ] || { echo 0; return; }
+  a exec-out screencap > "$out/raw.bin"
+  python3 -I - "$out/raw.bin" $1 <<'PY'
+import sys, struct
+d = open(sys.argv[1], 'rb').read(); w, h, f = struct.unpack('<III', d[:12])
+off = 16 if len(d) - 16 == w * h * 4 else 12
+x1, y1, x2, y2 = map(int, sys.argv[2:6]); n = 0
+for y in range(max(0, y1 - 8), min(h, y2 + 8)):
+    row = off + y * w * 4
+    for x in range(max(0, x1 - 8), min(w, x2 + 8)):
+        r, g, b = d[row + x * 4], d[row + x * 4 + 1], d[row + x * 4 + 2]
+        if abs(r - 0xE8) < 40 and abs(g - 0xB8) < 40 and abs(b - 0x4A) < 50: n += 1
+print(n)
+PY
+}
 demo() {
   a shell am force-stop $pkg
   mark
@@ -108,6 +132,16 @@ a shell am start -W -n $pkg/com.limelight.PcView >/dev/null; sleep 3
 win=$(a shell dumpsys window | grep mCurrentFocus | tr -d '\r')
 case "$win" in *com.limelight.PcView*) echo "PASS the PC list opens";; *) echo "FAIL the PC list opens ($win)"; fails=$((fails + 1));; esac
 a exec-out screencap -p > "$out/pc-list.png"
+# Something has the focus at once (a TV shows nothing until a press otherwise), and a focused side button wears the
+# gold ring like the PC tiles (Android's grey highlight is hard to see from the sofa).
+fid=$(focused_id); [ -n "$fid" ] && echo "PASS the PC list opens with the focus on something ($fid)" || {
+  echo "FAIL the PC list opens with the focus on something (nothing focused)"; fails=$((fails + 1)); }
+a shell input keyevent KEYCODE_DPAD_LEFT; sleep 0.3; for _ in 1 2 3; do a shell input keyevent KEYCODE_DPAD_UP; done; sleep 0.6
+fid=$(focused_id)
+g=$(gold_in "$(bounds_of settingsButton)")
+if [ "$fid" = settingsButton ] && [ "${g:-0}" -ge 200 ]; then echo "PASS a focused side button is ringed in gold ($g gold pixels)"
+else echo "FAIL a focused side button is ringed in gold (focused: $fid, ${g:-0} gold pixels)"; fails=$((fails + 1)); fi
+a exec-out screencap -p > "$out/pc-list-settings.png"
 a shell am force-stop $pkg
 
 echo "emulator-check: $fails failed"

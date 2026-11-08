@@ -11,8 +11,9 @@ android {
         minSdk 21
         targetSdk 36
 
-        versionName "12.2"
-        versionCode = 315
+        // Artemis's own version (upstream Moonlight's was 12.2, 315); the code only grows, so updates install over it.
+        versionName "1.0"
+        versionCode = 316
 
         applicationId "com.danielzn.artemis.tv"
         buildConfigField "boolean", "ROOT_BUILD", "false"
@@ -60,6 +61,22 @@ android {
         }
     }
 
+    // The release key: one stable key (the APKs installed so far were signed with it), kept on the build machine
+    // and given by Gradle properties there (~/.gradle/gradle.properties): artemisTvKeystore, artemisTvKeystorePassword,
+    // artemisTvKeyAlias, artemisTvKeyPassword. Without them the release APK is left unsigned.
+    def releaseKey = ['artemisTvKeystore', 'artemisTvKeystorePassword', 'artemisTvKeyAlias', 'artemisTvKeyPassword']
+            .every { project.hasProperty(it) }
+    signingConfigs {
+        if (releaseKey) {
+            release {
+                storeFile file(project.property('artemisTvKeystore'))
+                storePassword project.property('artemisTvKeystorePassword')
+                keyAlias project.property('artemisTvKeyAlias')
+                keyPassword project.property('artemisTvKeyPassword')
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix ".debug"
@@ -67,9 +84,10 @@ android {
         }
         release {
             // Its own application id (com.danielzn.artemis.tv), so it never reports as official Moonlight.
-            // Signed with the debug key: it's sideloaded, never published to a store.
+            // Signed with the release key above (not debuggable); sideloaded, never published to a store.
             resValue "string", "app_label", "Artemis"
-            signingConfig signingConfigs.debug
+            debuggable false
+            signingConfig releaseKey ? signingConfigs.release : null
 
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

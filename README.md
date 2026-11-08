@@ -16,8 +16,11 @@ hosts, and a fork of Moonlight for Android (below), under the same GPL v3 licenc
   mode from the cursor state; per-client permissions and display scale are set on the host.
 - **Wake-on-LAN:** OK on an offline PC wakes it ("Waking up…") and opens it once it's up.
 - **"Connecting to *PC*…"** with a red Cancel.
-- Artemis's name, icon, TV banner, navy and gold look and Orbix font; installs beside Moonlight
+- Artemis's name, icon, full-tile TV banner, navy and gold look and Orbix font; installs beside Moonlight
   (`com.danielzn.artemis.tv`). Only the non-root build.
+
+**Download:** [Artemis-TV.apk](https://github.com/daniel-zn/artemis-android-tv/releases/latest/download/Artemis-TV.apk)
+(Android TV / Google TV 5.0+; sideload it, e.g. `adb install -r Artemis-TV.apk`).
 
 The full spec, with what's left out and why: [docs/ARTEMIS-TV.md](docs/ARTEMIS-TV.md).
 

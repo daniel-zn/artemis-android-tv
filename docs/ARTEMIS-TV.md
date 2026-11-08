@@ -69,7 +69,7 @@ pointer). A mouse is a mouse.
 
 | Feature | Mac | iPhone | TV | |
 |---|---|---|---|---|
-| Name Artemis, Artemis icon, Orbix font | ✅ | ✅ | ✅ the iPhone's icon, a TV banner, Orbix with system digits | ✅ |
+| Name Artemis, Artemis icon, Orbix font | ✅ | ✅ | ✅ the iPhone's icon, a full-tile TV banner (the Artemis art), Orbix with system digits | ✅ |
 | Installs beside stock Moonlight | ➖ same bundle id | ✅ | ✅ `com.danielzn.artemis.tv` | ✅ |
 | Computers: find (mDNS), add by address, remove, details, test network | ✅ | ✅ | ✅ upstream's | ✅ |
 | Pair with Apollo (PIN) | ✅ | ✅ | ✅ the PIN shown large; Apollo's client name is the TV's name | ✅ |
@@ -125,7 +125,17 @@ pointer). A mouse is a mouse.
 - **Waking:** OK on an offline PC with a known MAC address sends Wake-on-LAN and shows "Waking up *PC*…" with a
   red Cancel; the first status poll that sees it online opens it (its apps, or pairing); after 90 s, "Couldn't
   wake the PC". Leaving the PC list stops waiting. The PC's long-press menu still has Wake-on-LAN on its own.
-- **Release step:** none. There's no store; the APK is installed on the TV by hand (`adb install -r`).
+- **Release step:** none in integrate. There's no store; the APK is installed on the TV by hand (`adb install -r`)
+  or downloaded from the repository's GitHub releases (asset `Artemis-TV.apk`, the release build).
+- **Signing:** one permanent release key (the key the first installs were signed with, so updates install over
+  them). It lives on the build machine and reaches Gradle as properties (`artemisTvKeystore`,
+  `artemisTvKeystorePassword`, `artemisTvKeyAlias`, `artemisTvKeyPassword` in `~/.gradle/gradle.properties`);
+  without them the release APK is left unsigned. The release build isn't debuggable. Version 1.0 (code 316, above
+  upstream's 315).
+- **TV banner:** full-bleed like an Apple TV tile: `art/artemis-banner-wide.jpg` cropped to 16:9 (the full
+  figure, centred) by `tools/banner-from-image.sh`, 320 × 180 and 640 × 360, no name or corners (the launcher adds
+  them). The launcher icon stays the iPhone's icon (`tools/icon-images.swift`).
+- **The PC list's side buttons** (Settings, Help, Add PC) get the same gold focus ring as the PC tiles.
 
 ## Tests
 
@@ -137,5 +147,6 @@ pointer). A mouse is a mouse.
   `ArtemisDemoSession` (the remote and session menu with no PC; what would go to the PC is logged) is driven with
   injected keys, as the TV's remote bridge sends them: a step from the middle, click, long press = right click,
   glide, Back opens the menu on Resume, the D-pad moves the menu's focus and not the pointer, Scroll mode, Back
-  resumes, Disconnect, captured-cursor relative motion; and the PC list opens.
+  resumes, Disconnect, captured-cursor relative motion; and the PC list opens with the focus on something, and a
+  focused side button wears the gold ring (gold pixels counted in a screenshot).
 - `.mercurius/integrate.json` runs `scripts/check.sh build|unit|emulator`.

@@ -48,12 +48,14 @@
         android:layout_width="70dp"
         android:layout_height="65dp"
         android:cropToPadding="false"
-        android:scaleType="fitXY"
+        android:scaleType="fitCenter"
         android:nextFocusForward="@id/helpButton"
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:src="@drawable/ic_settings"
+        android:background="@drawable/artemis_icon_button"
+        android:padding="10dp"
         style="?android:attr/borderlessButtonStyle"/>
 
     <ImageButton
@@ -61,12 +63,14 @@
         android:layout_width="70dp"
         android:layout_height="65dp"
         android:cropToPadding="false"
-        android:scaleType="fitXY"
+        android:scaleType="fitCenter"
         android:nextFocusForward="@id/manuallyAddPc"
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
         android:layout_below="@id/settingsButton"
         android:src="@drawable/ic_help"
+        android:background="@drawable/artemis_icon_button"
+        android:padding="10dp"
         style="?android:attr/borderlessButtonStyle"/>
 
     <ImageButton
@@ -74,11 +78,13 @@
         android:layout_width="70dp"
         android:layout_height="65dp"
         android:cropToPadding="false"
-        android:scaleType="fitXY"
+        android:scaleType="fitCenter"
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
         android:layout_below="@id/helpButton"
         android:src="@drawable/ic_add"
+        android:background="@drawable/artemis_icon_button"
+        android:padding="10dp"
         style="?android:attr/borderlessButtonStyle"/>
 
 </RelativeLayout>

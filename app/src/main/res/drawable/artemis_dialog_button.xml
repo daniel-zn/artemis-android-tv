@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Artemis: a dialog's focused button gets the gold ring (the stock grey highlight is hard to see from the sofa) -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="12dp" />
+            <solid android:color="@color/artemis_navy_light" />
+            <stroke android:width="3dp" android:color="@color/artemis_gold" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="12dp" />
+            <solid android:color="@color/artemis_navy_light" />
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent" />
+</selector>

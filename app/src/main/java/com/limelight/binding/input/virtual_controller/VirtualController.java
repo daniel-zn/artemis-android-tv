@@ -86,7 +86,7 @@ public class VirtualController {
                     message = "Exiting configuration mode";
                 }
 
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+                com.limelight.artemis.ArtemisToast.makeText(context, message, Toast.LENGTH_SHORT).show();
 
                 buttonConfigure.invalidate();
 

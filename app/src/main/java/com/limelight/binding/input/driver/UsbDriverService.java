@@ -167,7 +167,7 @@ public class UsbDriverService extends Service implements UsbDriverListener {
 
                     usbManager.requestPermission(device, PendingIntent.getBroadcast(UsbDriverService.this, 0, i, intentFlags));
                 } catch (SecurityException e) {
-                    Toast.makeText(this, this.getText(R.string.error_usb_prohibited), Toast.LENGTH_LONG).show();
+                    com.limelight.artemis.ArtemisToast.makeText(this, this.getText(R.string.error_usb_prohibited), Toast.LENGTH_LONG).show();
                     if (stateListener != null) {
                         stateListener.onUsbPermissionPromptCompleted();
                     }

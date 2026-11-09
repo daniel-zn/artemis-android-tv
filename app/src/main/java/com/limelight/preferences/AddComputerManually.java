@@ -197,7 +197,7 @@ public class AddComputerManually extends Activity {
             AddComputerManually.this.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                Toast.makeText(AddComputerManually.this, getResources().getString(R.string.addpc_success), Toast.LENGTH_LONG).show();
+                com.limelight.artemis.ArtemisToast.makeText(AddComputerManually.this, getResources().getString(R.string.addpc_success), Toast.LENGTH_LONG).show();
 
                 if (!isFinishing()) {
                     // Close the activity
@@ -313,7 +313,7 @@ public class AddComputerManually extends Activity {
         String hostAddress = hostText.getText().toString().trim();
 
         if (hostAddress.length() == 0) {
-            Toast.makeText(AddComputerManually.this, getResources().getString(R.string.addpc_enter_ip), Toast.LENGTH_LONG).show();
+            com.limelight.artemis.ArtemisToast.makeText(AddComputerManually.this, getResources().getString(R.string.addpc_enter_ip), Toast.LENGTH_LONG).show();
             return true;
         }
 

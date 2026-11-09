@@ -1,0 +1,39 @@
+<resources>
+    <!--
+        Artemis, API 26+: as values-v21, plus Orbix as the font of every text (res/font/orbix.otf, Orbix without its
+        digits, so digits come out in the system font), dialogs in navy and Orbix, and gold focus on list rows and
+        dialog buttons. values-v29 repeats the font items. Below API 26 the PC list and session menu still use
+        ArtemisFont by hand.
+    -->
+    <style name="AppBaseTheme" parent="android:Theme.Material">
+        <item name="android:colorPrimary">@color/artemis_navy</item>
+        <item name="android:colorPrimaryDark">@color/artemis_navy_dark</item>
+        <item name="android:colorAccent">@color/artemis_gold</item>
+        <item name="android:colorBackground">@color/artemis_navy_dark</item>
+        <item name="android:statusBarColor">@color/artemis_navy_dark</item>
+        <item name="android:navigationBarColor">@color/artemis_navy_dark</item>
+        <item name="android:fontFamily">@font/orbix</item>
+        <item name="android:alertDialogTheme">@style/ArtemisAlertDialog</item>
+        <item name="android:dialogTheme">@style/ArtemisAlertDialog</item>
+        <item name="android:listViewStyle">@style/ArtemisListView</item>
+    </style>
+
+    <style name="ArtemisListView" parent="android:Widget.Material.ListView">
+        <item name="android:listSelector">@drawable/artemis_grid_selector</item>
+    </style>
+
+    <style name="ArtemisAlertDialog" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:fontFamily">@font/orbix</item>
+        <item name="android:colorAccent">@color/artemis_gold</item>
+        <item name="android:colorBackground">@color/artemis_navy</item>
+        <item name="android:listViewStyle">@style/ArtemisListView</item>
+        <item name="android:buttonBarButtonStyle">@style/ArtemisDialogButton</item>
+    </style>
+
+    <style name="ArtemisDialogButton" parent="android:Widget.Material.Button.Borderless.Colored">
+        <item name="android:background">@drawable/artemis_dialog_button</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+    </style>
+</resources>

@@ -9,5 +9,10 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <!-- Avoid some systems like MIUI which break the visibility of games title -->
         <item name="android:forceDarkAllowed">false</item>
+        <!-- Artemis: Orbix, navy dialogs, gold focus (values-v26) -->
+        <item name="android:fontFamily">@font/orbix</item>
+        <item name="android:alertDialogTheme">@style/ArtemisAlertDialog</item>
+        <item name="android:dialogTheme">@style/ArtemisAlertDialog</item>
+        <item name="android:listViewStyle">@style/ArtemisListView</item>
     </style>
 </resources>

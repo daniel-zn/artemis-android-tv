@@ -220,6 +220,7 @@ public abstract class VirtualControllerElement extends View {
         AlertDialog alert = alertBuilder.create();
         // show menu
         alert.show();
+        com.limelight.artemis.ArtemisFont.dialog(alert);
     }
 
     @Override

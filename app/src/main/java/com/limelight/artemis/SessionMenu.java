@@ -140,6 +140,7 @@ public final class SessionMenu implements SessionRemote.Menu {
             }
         });
         confirm.show();
+        ArtemisFont.dialog(confirm);
     }
 
     private void refresh() {

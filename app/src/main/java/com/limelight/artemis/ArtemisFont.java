@@ -71,4 +71,23 @@ public final class ArtemisFont {
     public static void setText(TextView v, CharSequence text) {
         v.setText(styled(v.getContext(), text));
     }
+
+    /**
+     * Call after a dialog's show(): Android's dialog layouts give the message a fixed text style, which beats the
+     * theme's font, so the message is set in Orbix here (the title, buttons and lists follow the theme).
+     */
+    public static void dialog(android.app.Dialog d) {
+        if (d == null || d.getWindow() == null) {
+            return;
+        }
+        android.view.View v = d.findViewById(android.R.id.message);
+        if (v instanceof TextView) {
+            TextView message = (TextView) v;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                message.setTypeface(message.getResources().getFont(com.limelight.R.font.orbix));
+            } else {
+                apply(message);
+            }
+        }
+    }
 }

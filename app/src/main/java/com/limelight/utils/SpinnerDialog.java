@@ -111,6 +111,7 @@ public class SpinnerDialog implements Runnable,OnCancelListener {
             synchronized (rundownDialogs) {
                 rundownDialogs.add(this);
                 progress.show();
+                com.limelight.artemis.ArtemisFont.dialog(progress);
             }
 
             if (finish && cancelLabel != null) {

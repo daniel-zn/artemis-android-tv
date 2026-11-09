@@ -231,10 +231,10 @@ public class UiHelper {
         };
 
         AlertDialog.Builder builder = new AlertDialog.Builder(parent);
-        builder.setMessage(parent.getResources().getString(R.string.applist_quit_confirmation))
+        com.limelight.artemis.ArtemisFont.dialog(builder.setMessage(parent.getResources().getString(R.string.applist_quit_confirmation))
                 .setPositiveButton(parent.getResources().getString(R.string.yes), dialogClickListener)
                 .setNegativeButton(parent.getResources().getString(R.string.no), dialogClickListener)
-                .show();
+                .show());
     }
 
     public static void displayDeletePcConfirmationDialog(Activity parent, ComputerDetails computer, final Runnable onYes, final Runnable onNo) {
@@ -258,10 +258,10 @@ public class UiHelper {
         };
 
         AlertDialog.Builder builder = new AlertDialog.Builder(parent);
-        builder.setMessage(parent.getResources().getString(R.string.delete_pc_msg))
+        com.limelight.artemis.ArtemisFont.dialog(builder.setMessage(parent.getResources().getString(R.string.delete_pc_msg))
                 .setTitle(computer.name)
                 .setPositiveButton(parent.getResources().getString(R.string.yes), dialogClickListener)
                 .setNegativeButton(parent.getResources().getString(R.string.no), dialogClickListener)
-                .show();
+                .show());
     }
 }

@@ -384,11 +384,11 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
                 if (!willStreamHdr) {
                     // Nope, no HDR for us :(
-                    Toast.makeText(this, "Display does not support HDR10", Toast.LENGTH_LONG).show();
+                    com.limelight.artemis.ArtemisToast.makeText(this, "Display does not support HDR10", Toast.LENGTH_LONG).show();
                 }
             }
             else {
-                Toast.makeText(this, "HDR requires Android 7.0 or later", Toast.LENGTH_LONG).show();
+                com.limelight.artemis.ArtemisToast.makeText(this, "HDR requires Android 7.0 or later", Toast.LENGTH_LONG).show();
             }
         }
 
@@ -420,17 +420,17 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         // Don't stream HDR if the decoder can't support it
         if (willStreamHdr && !decoderRenderer.isHevcMain10Hdr10Supported() && !decoderRenderer.isAv1Main10Supported()) {
             willStreamHdr = false;
-            Toast.makeText(this, "Decoder does not support HDR10 profile", Toast.LENGTH_LONG).show();
+            com.limelight.artemis.ArtemisToast.makeText(this, "Decoder does not support HDR10 profile", Toast.LENGTH_LONG).show();
         }
 
         // Display a message to the user if HEVC was forced on but we still didn't find a decoder
         if (prefConfig.videoFormat == PreferenceConfiguration.FormatOption.FORCE_HEVC && !decoderRenderer.isHevcSupported()) {
-            Toast.makeText(this, "No HEVC decoder found", Toast.LENGTH_LONG).show();
+            com.limelight.artemis.ArtemisToast.makeText(this, "No HEVC decoder found", Toast.LENGTH_LONG).show();
         }
 
         // Display a message to the user if AV1 was forced on but we still didn't find a decoder
         if (prefConfig.videoFormat == PreferenceConfiguration.FormatOption.FORCE_AV1 && !decoderRenderer.isAv1Supported()) {
-            Toast.makeText(this, "No AV1 decoder found", Toast.LENGTH_LONG).show();
+            com.limelight.artemis.ArtemisToast.makeText(this, "No AV1 decoder found", Toast.LENGTH_LONG).show();
         }
 
         // H.264 is always supported
@@ -1167,7 +1167,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                 }
 
                 if (message != null) {
-                    Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                    com.limelight.artemis.ArtemisToast.makeText(this, message, Toast.LENGTH_LONG).show();
                 }
             }
 
@@ -1407,7 +1407,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
     /** Stop app on the PC (the session menu, after asking): quits it there, then the session ends. */
     private void stopAppOnPc() {
-        Toast.makeText(this, getString(R.string.applist_quit_app) + " " + appName + "…", Toast.LENGTH_SHORT).show();
+        com.limelight.artemis.ArtemisToast.makeText(this, getString(R.string.applist_quit_app) + " " + appName + "…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
                 NvHTTP http = new NvHTTP(new ComputerDetails.AddressTuple(artemisHost, artemisPort), artemisHttpsPort,
@@ -1444,7 +1444,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
                     startArtemisMic();
                 }
             } else {
-                Toast.makeText(this, R.string.artemis_mic_no_permission, Toast.LENGTH_LONG).show();
+                com.limelight.artemis.ArtemisToast.makeText(this, R.string.artemis_mic_no_permission, Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -2437,7 +2437,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
 
                     // If video initialization failed and the surface is still valid, display extra information for the user
                     if (stage.contains("video") && streamView.getHolder().getSurface().isValid()) {
-                        Toast.makeText(Game.this, getResources().getText(R.string.video_decoder_init_failed), Toast.LENGTH_LONG).show();
+                        com.limelight.artemis.ArtemisToast.makeText(Game.this, getResources().getText(R.string.video_decoder_init_failed), Toast.LENGTH_LONG).show();
                     }
 
                     String dialogText = getResources().getString(R.string.conn_error_msg) + " " + stage +" (error "+errorCode+")";
@@ -2626,7 +2626,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast.makeText(Game.this, message, Toast.LENGTH_LONG).show();
+                com.limelight.artemis.ArtemisToast.makeText(Game.this, message, Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -2637,7 +2637,7 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(Game.this, message, Toast.LENGTH_LONG).show();
+                    com.limelight.artemis.ArtemisToast.makeText(Game.this, message, Toast.LENGTH_LONG).show();
                 }
             });
         }

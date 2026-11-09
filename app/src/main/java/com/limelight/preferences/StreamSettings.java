@@ -299,12 +299,40 @@ public class StreamSettings extends Activity {
             return view;
         }
 
+        private void showFontLicence() {
+            String text;
+            try (java.io.InputStream in = getActivity().getAssets().open("fonts/OFL.txt")) {
+                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                byte[] buf = new byte[4096];
+                for (int n; (n = in.read(buf)) > 0; ) {
+                    out.write(buf, 0, n);
+                }
+                text = out.toString("UTF-8");
+            } catch (java.io.IOException e) {
+                text = getString(R.string.artemis_licences_summary);
+            }
+            com.limelight.artemis.ArtemisFont.dialog(new android.app.AlertDialog.Builder(getActivity())
+                    .setTitle("Orbix")
+                    .setMessage(text)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show());
+        }
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
 
             addPreferencesFromResource(R.xml.preferences);
             PreferenceScreen screen = getPreferenceScreen();
+
+            // Artemis: the licence of the app's font
+            findPreference("artemis_licences").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(Preference preference) {
+                    showFontLicence();
+                    return true;
+                }
+            });
 
             // hide on-screen controls category on non touch screen devices
             if (!getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) {

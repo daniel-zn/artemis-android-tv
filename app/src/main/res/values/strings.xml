@@ -344,4 +344,7 @@
     <string name="artemis_mic_no_permission">Artemis can\'t use the microphone: allow it in the TV\'s settings (Apps › Artemis › Permissions).</string>
     <string name="title_checkbox_artemis_mic">Microphone to the PC</string>
     <string name="summary_checkbox_artemis_mic">Send the TV\'s microphone (or a USB or Bluetooth headset\'s) to an Apollo PC during sessions. Mute it in the session menu (Back).</string>
+    <string name="artemis_category_about">About</string>
+    <string name="artemis_licences_title">Licences</string>
+    <string name="artemis_licences_summary">The Orbix font, under the SIL Open Font License</string>
 </resources>

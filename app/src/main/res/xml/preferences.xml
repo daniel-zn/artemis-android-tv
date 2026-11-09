@@ -274,6 +274,13 @@
             android:summary="@string/summary_enable_post_stream_toast"
             android:defaultValue="false"/>
     </PreferenceCategory>
+    <PreferenceCategory android:title="@string/artemis_category_about"
+        android:key="artemis_category_about">
+        <Preference
+            android:key="artemis_licences"
+            android:title="@string/artemis_licences_title"
+            android:summary="@string/artemis_licences_summary" />
+    </PreferenceCategory>
     <!--PreferenceCategory android:title="@string/category_help"
         android:key="category_help">
         <com.limelight.preferences.WebLauncherPreference

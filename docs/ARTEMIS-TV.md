@@ -111,6 +111,20 @@ so the client asks for the TV's own mode, as the iPhone app (its screen's pixels
 - HDR stays upstream's own setting; the TV's display mode switching (`Game.prepareDisplayForRendering`) is
   upstream's and picks the TV mode for the stream's FPS.
 
+## Font and focus
+
+- **Orbix everywhere** (API 26+), one way: the theme's `android:fontFamily` is `res/font/orbix.otf`, Orbix without
+  its digits (`scripts/make-orbix-res-font.py` makes it from `assets/fonts/Orbix-Regular.otf`), so digits and
+  anything Orbix lacks (`'`, `(`, `:`) fall back to the system font, as on iPhone and Mac. `values-v26` and
+  `values-v29` set it on `AppBaseTheme` (so the stream's theme too) and on `ArtemisAlertDialog` (dialogs, lists,
+  pickers, spinners). Exceptions: a dialog's message has a fixed style in Android's layout, so
+  `ArtemisFont.dialog(d)` follows each `show()`; since Android 11 the system draws plain text toasts in its own
+  font, so `ArtemisToast` gives an activity's toasts their own view (navy pill, gold edge). The system keyboard
+  stays the system's. Below API 26 only the PC names and the session menu use Orbix (`ArtemisFont`'s spans).
+- **Gold focus**: list rows (Settings, a list's choices) use the PC tiles' ring (`ArtemisListView`), dialog
+  buttons `artemis_dialog_button`.
+- **Licences**: Settings ends with About → Licences, Orbix's SIL Open Font License (`assets/fonts/OFL.txt`).
+
 ## Decisions
 
 - **Fork of moonlight-android** (`daniel-zn/artemis-android-tv`, `main`), code package and translations stay
@@ -179,5 +193,8 @@ so the client asks for the TV's own mode, as the iPhone app (its screen's pixels
   with Match this TV; and the debug build's `ArtemisModeProbe` (the stored settings read as a session does, put in
   the launch request's `mode=` as NvHTTP does) asks for the emulator's own mode, read independently from `wm size`
   and SurfaceFlinger, with its default bitrate, for a new install and one on upstream's 720p default, while a
-  chosen 720p30 stays.
+  chosen 720p30 stays. The debug build's `ArtemisFontProbe` (a broadcast receiver) measures every visible text in
+  the app's windows against Orbix-with-system-digits; the check asks it on the session menu, PC list, resolution
+  list, Settings (top and bottom, gold-ringed focused row), the licence, Add PC, its error dialog and a toast.
+  `ArtemisToastTest` (unit) fails on any plain `Toast.makeText` outside `ArtemisToast`.
 - `.mercurius/integrate.json` runs `scripts/check.sh build|unit|emulator`.

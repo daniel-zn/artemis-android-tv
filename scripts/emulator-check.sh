@@ -33,6 +33,8 @@ pkg=com.danielzn.artemis.tv.debug
 a install -r "$apk" >/dev/null || { echo "emulator-check: install failed"; exit 1; }
 # Keep the emulator awake; no sound needed
 a shell input keyevent KEYCODE_WAKEUP
+# The font probe reads the app's windows through a hidden API
+a shell settings put global hidden_api_policy 1
 
 fails=0
 check() { # name, then the lines expected (each a regex, in order) in the log since the last mark
@@ -80,6 +82,13 @@ for y in range(max(0, y1 - 8), min(h, y2 + 8)):
 print(n)
 PY
 }
+fontcheck() { # name [window regex that must be among the windows]: every visible text in the app's windows is in Orbix
+  mark; a shell am broadcast -n $pkg/com.limelight.artemis.ArtemisFontProbe >/dev/null; sleep 1
+  local log; log=$(a logcat -d -s ArtemisRemote:I | sed -n 's/.*ArtemisRemote: //p' | tr -d '\r' | grep '^font ')
+  local need=${2:-.}
+  if printf '%s\n' "$log" | grep -q -E "^font ($need)[^ ]* orbix=[1-9]" && ! printf '%s\n' "$log" | grep -q -E 'other=[1-9]'; then
+    echo "PASS $1"; else echo "FAIL $1:"; printf '%s\n' "${log:-(no windows)}" | sed 's/^/    /'; fails=$((fails + 1)); fi
+}
 demo() {
   a shell am force-stop $pkg
   mark
@@ -102,6 +111,7 @@ check "presses that keep coming glide" "moveTo 989 [0-9]+" "moveTo 989 [0-9]+" "
 mark; key KEYCODE_BACK
 check "Back opens the session menu" "menu" "menu shown"
 a exec-out screencap -p > "$out/menu.png"
+fontcheck "the session menu is in Orbix"
 f=$(focused); [ "$f" = "Resume" ] && echo "PASS the menu opens on Resume" || { echo "FAIL the menu opens on Resume (focused: $f)"; fails=$((fails + 1)); }
 key KEYCODE_DPAD_DOWN
 f=$(focused); [ "$f" = "Keyboard" ] && echo "PASS the D-pad moves the menu's focus" || { echo "FAIL the D-pad moves the menu's focus (focused: $f)"; fails=$((fails + 1)); }
@@ -132,6 +142,7 @@ a shell am start -W -n $pkg/com.limelight.PcView >/dev/null; sleep 3
 win=$(a shell dumpsys window | grep mCurrentFocus | tr -d '\r')
 case "$win" in *com.limelight.PcView*) echo "PASS the PC list opens";; *) echo "FAIL the PC list opens ($win)"; fails=$((fails + 1));; esac
 a exec-out screencap -p > "$out/pc-list.png"
+fontcheck "the PC list is in Orbix"
 # Something has the focus at once (a TV shows nothing until a press otherwise), and a focused side button wears the
 # gold ring like the PC tiles (Android's grey highlight is hard to see from the sofa).
 fid=$(focused_id); [ -n "$fid" ] && echo "PASS the PC list opens with the focus on something ($fid)" || {
@@ -148,6 +159,39 @@ a shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
 mt=$(a shell cat /sdcard/ui.xml | tr '>' '\n' | grep -o 'text="Match this TV ([^"]*)"' | head -1 | sed 's/text="//; s/"$//')
 a exec-out screencap -p > "$out/settings-resolution.png"
 [ -n "$mt" ] && echo "PASS the resolution list offers $mt" || { echo "FAIL the resolution list offers Match this TV"; fails=$((fails + 1)); }
+fontcheck "the resolution list is in Orbix"
+# Orbix everywhere (the theme's font, digits in the system font), and a focused settings row ringed in gold
+key KEYCODE_BACK; sleep 1
+a exec-out screencap -p > "$out/settings.png"
+fontcheck "Settings is in Orbix"
+g=$(gold_in "1000 0 1910 1080")
+[ "${g:-0}" -ge 2000 ] && echo "PASS a focused settings row is ringed in gold ($g gold pixels)" || {
+  echo "FAIL a focused settings row is ringed in gold (${g:-0} gold pixels right of the titles)"; fails=$((fails + 1)); }
+for _ in $(seq 1 90); do a shell input keyevent KEYCODE_DPAD_DOWN; done; sleep 1
+a exec-out screencap -p > "$out/settings-end.png"
+fontcheck "Settings, further down, is in Orbix"
+key KEYCODE_DPAD_CENTER; sleep 1
+a shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
+if a shell cat /sdcard/ui.xml | grep -q "Reserved Font Name"; then echo "PASS Settings ends with Orbix's licence"
+else echo "FAIL Settings ends with Orbix's licence"; fails=$((fails + 1)); fi
+a exec-out screencap -p > "$out/settings-licence.png"
+fontcheck "the licence is in Orbix"
+# Add PC, then its error dialog (a name that isn't one fails at once)
+key KEYCODE_BACK; key KEYCODE_BACK; sleep 1
+a shell input keyevent KEYCODE_DPAD_LEFT; sleep 0.3; for _ in 1 2 3; do a shell input keyevent KEYCODE_DPAD_UP; done
+key KEYCODE_DPAD_DOWN; key KEYCODE_DPAD_DOWN
+fid=$(focused_id)
+if [ "$fid" = manuallyAddPc ]; then key KEYCODE_DPAD_CENTER; sleep 2
+  a exec-out screencap -p > "$out/add-pc.png"
+  fontcheck "Add PC is in Orbix"
+  a shell input text 'bad^host'; key KEYCODE_ENTER; sleep 2
+  a exec-out screencap -p > "$out/add-pc-error.png"
+  fontcheck "the error dialog is in Orbix"
+else echo "FAIL Add PC is in Orbix (focus on ${fid:-nothing}, not Add PC)"; fails=$((fails + 1)); fi
+# The app's toasts
+a shell am broadcast -n $pkg/com.limelight.artemis.ArtemisFontProbe --es toast "Artemis test toast" >/dev/null; sleep 1
+a exec-out screencap -p > "$out/toast.png"
+fontcheck "a toast is in Orbix" "Toast"
 a shell am force-stop $pkg
 
 # Match this TV: the launch request asks for the TV's own mode (Apollo makes its virtual display at it), for a new

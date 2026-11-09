@@ -12,5 +12,8 @@
             android:name="com.limelight.artemis.ArtemisModeProbe"
             android:exported="true"
             android:theme="@android:style/Theme.NoDisplay" />
+        <receiver
+            android:name="com.limelight.artemis.ArtemisFontProbe"
+            android:exported="true" />
     </application>
 </manifest>

@@ -12,8 +12,8 @@ android {
         targetSdk 36
 
         // Artemis's own version (upstream Moonlight's was 12.2, 315); the code only grows, so updates install over it.
-        versionName "1.1"
-        versionCode = 317
+        versionName "1.2"
+        versionCode = 318
 
         applicationId "com.danielzn.artemis.tv"
         buildConfigField "boolean", "ROOT_BUILD", "false"

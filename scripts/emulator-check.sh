@@ -35,15 +35,9 @@ a install -r "$apk" >/dev/null || { echo "emulator-check: install failed"; exit 
 a shell input keyevent KEYCODE_WAKEUP
 # The font probe reads the app's windows through a hidden API
 a shell settings put global hidden_api_policy 1
-# Google TV's launcher asks to "Set up Device Lock" on every boot; its window takes the focus the checks
-# read, so answer it (Back: a key, not a tap, which would leave the app in touch mode) before starting.
+# Google TV's launcher shows a "Set up Device Lock" prompt on every boot. Popping up mid-check it takes the
+# focus the checks read, so let the launcher show it first: the app then opens above it.
 a shell input keyevent KEYCODE_HOME; sleep 5
-a shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
-if a shell cat /sdcard/ui.xml | grep -q 'Set up Device Lock'; then
-  a shell input keyevent KEYCODE_BACK; sleep 2
-  a shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
-  a shell cat /sdcard/ui.xml | grep -q 'Set up Device Lock' && echo "emulator-check: the Device Lock prompt is still up"
-fi
 
 fails=0
 check() { # name, then the lines expected (each a regex, in order) in the log since the last mark

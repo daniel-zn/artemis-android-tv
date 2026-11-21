@@ -19,5 +19,8 @@ case "${1:-}" in
     export REMOTE_BUILD_FETCH=build/emulator-check ;;
   *) echo "usage: scripts/check.sh build|unit|emulator" >&2; exit 2 ;;
 esac
-exec mercurius-agent machine run "$machine" --local --timeout "${ARTEMIS_CHECK_TIMEOUT:-50}" \
-  --reason "Artemis TV: $1 check" -- scripts/remote-build.sh "$cmd"
+# Every run uses the one copy there (remote-build.sh): runs of this repo take turns on its own line, so a
+# second one doesn't sync over the first one's build (the machine admits several jobs at once).
+t=${ARTEMIS_CHECK_TIMEOUT:-50}
+exec mercurius-agent turn run "artemis-android-tv-$machine" --reason "Artemis TV: $1 check" --timeout $((t + 15)) -- \
+  mercurius-agent machine run "$machine" --local --timeout "$t" --reason "Artemis TV: $1 check" -- scripts/remote-build.sh "$cmd"

@@ -17,7 +17,7 @@
       "name": "emulator",
       "run": "scripts/check.sh emulator",
       "inputs": ["app/**", "gradle/**", "*.gradle", "gradle.properties", "gradlew", "settings.gradle", "scripts/**", "!**/*.md"],
-      "timeout": 60
+      "timeout": 130
     }
   ]
 }

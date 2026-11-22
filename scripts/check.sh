@@ -3,7 +3,7 @@
 # Mercurius (`mercurius-agent machine run`), in a copy of the checkout (scripts/remote-build.sh).
 # Which machine, and how to start its emulator, come from the environment or from .mercurius/local.env in the
 # main checkout (not in git), for example:
-#   ARTEMIS_BUILD_MACHINE=builder
+#   ARTEMIS_BUILD_MACHINE=builder   REMOTE_BUILD_WSL=Debian (a Windows machine: see remote-build.sh)
 #   ARTEMIS_EMULATOR_START='emu start tv'   ARTEMIS_EMULATOR_STOP='emu stop tv'
 set -euo pipefail
 cd "$(dirname "$0")/.."

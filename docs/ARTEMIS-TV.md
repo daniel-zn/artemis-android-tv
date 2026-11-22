@@ -154,7 +154,7 @@ so the client asks for the TV's own mode, as the iPhone app (its screen's pixels
   `LiSendMicrophoneOpusDataEx`. It starts only when Apollo negotiated the microphone; without the permission it
   says so once and the session goes on.
 - **Clipboard left out** (above). **Try the Demo left out** (App Store only). **Touch controls left out.**
-- **Builds and tests on a Linux build machine** (`scripts/remote-build.sh`), never on hosted CI (GitHub Actions is disabled on the
+- **Builds and tests on a Linux build machine** (`scripts/remote-build.sh`; a Windows machine's WSL works too), never on hosted CI (GitHub Actions is disabled on the
   fork). The APK has armeabi-v7a (the projector), arm64-v8a, x86 and x86_64 native code.
 - **"Connecting to *PC*…"** is the stream's connecting popup (upstream opens a PC's app list from its last
   status poll, without connecting first, so that's the only open that waits). Its red Cancel (or Back) ends the

@@ -101,6 +101,16 @@ demo() {
   mark
 }
 
+# A PC's app grid (the debug build's ArtemisAppGridProbe: the real adapter, layout and focus lift, with flat box art):
+# art and gold ring share one rounded shape, the ring hugs the card, and the running mark sits outside the art.
+a shell am force-stop $pkg; mark
+a shell am start -W -n $pkg/com.limelight.artemis.ArtemisAppGridProbe >/dev/null
+for _ in $(seq 1 20); do a logcat -d -s ArtemisRemote:I | grep -q "cards ready" && break; sleep 0.5; done
+a exec-out screencap -p > "$out/app-grid.png"; a exec-out screencap > "$out/raw.bin"
+python3 -I scripts/app-cards.py "$out/raw.bin" || fails=$((fails + $?))
+a shell am force-stop $pkg
+if [ "${ARTEMIS_ONLY:-}" = cards ]; then echo "emulator-check: $fails failed"; [ $fails = 0 ]; exit; fi
+
 demo
 key KEYCODE_DPAD_RIGHT
 check "a tap moves the pointer one step from the middle" "moveTo 989 540"

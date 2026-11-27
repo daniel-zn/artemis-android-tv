@@ -5,6 +5,7 @@
 # main checkout (not in git), for example:
 #   ARTEMIS_BUILD_MACHINE=builder   REMOTE_BUILD_WSL=Debian (a Windows machine: see remote-build.sh)
 #   ARTEMIS_EMULATOR_START='emu start tv'   ARTEMIS_EMULATOR_STOP='emu stop tv'
+# ARTEMIS_ONLY=cards runs only the emulator check's app-grid cards.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 for f in "${INTEGRATE_SOURCE:-.}/.mercurius/local.env" .mercurius/local.env; do
@@ -15,7 +16,7 @@ gradle='./gradlew --no-daemon -q'
 case "${1:-}" in
   build) cmd="$gradle :app:assembleDebug :app:assembleRelease" ;;
   unit) cmd="$gradle :app:testDebugUnitTest" ;;
-  emulator) cmd="$gradle :app:assembleDebug && ARTEMIS_EMULATOR_START=$(printf %q "${ARTEMIS_EMULATOR_START:-}") ARTEMIS_EMULATOR_STOP=$(printf %q "${ARTEMIS_EMULATOR_STOP:-}") scripts/emulator-check.sh"
+  emulator) cmd="$gradle :app:assembleDebug && ARTEMIS_EMULATOR_START=$(printf %q "${ARTEMIS_EMULATOR_START:-}") ARTEMIS_EMULATOR_STOP=$(printf %q "${ARTEMIS_EMULATOR_STOP:-}") ARTEMIS_ONLY=$(printf %q "${ARTEMIS_ONLY:-}") scripts/emulator-check.sh"
     export REMOTE_BUILD_FETCH=build/emulator-check ;;
   *) echo "usage: scripts/check.sh build|unit|emulator" >&2; exit 2 ;;
 esac

@@ -12,6 +12,9 @@
             android:name="com.limelight.artemis.ArtemisModeProbe"
             android:exported="true"
             android:theme="@android:style/Theme.NoDisplay" />
+        <activity
+            android:name="com.limelight.artemis.ArtemisAppGridProbe"
+            android:exported="true" />
         <receiver
             android:name="com.limelight.artemis.ArtemisFontProbe"
             android:exported="true" />

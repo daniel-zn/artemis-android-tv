@@ -168,9 +168,10 @@ so the client asks for the TV's own mode, as the iPhone app (its screen's pixels
   new release keeps the asset name `Artemis-TV.apk`, so `releases/latest/download/Artemis-TV.apk` always gets the newest
   one. Raise versionCode for every release, and scan the built APK for personal details before uploading.
 - **Signing:** one permanent release key (the key the first installs were signed with, so updates install over
-  them). It lives on the build machine and reaches Gradle as properties (`artemisTvKeystore`,
-  `artemisTvKeystorePassword`, `artemisTvKeyAlias`, `artemisTvKeyPassword` in `~/.gradle/gradle.properties`);
-  without them the release APK is left unsigned. The release build isn't debuggable. Version 1.0 (code 316, above
+  them). It is kept as Mercurius secrets (`ARTEMIS_TV_KEYSTORE_B64`, `ARTEMIS_TV_KEYSTORE_PASSWORD`); grok-things
+  `Projects/artemis/tv-release-build.sh` sends it to the build machine (Enchilada's WSL) over ssh stdin and hands it
+  to Gradle as `ORG_GRADLE_PROJECT_artemisTvKeystore`, `…KeystorePassword`, `…KeyAlias` and `…KeyPassword`, then
+  deletes it after the build, so nothing stays there. Without those properties the release APK is left unsigned. The release build isn't debuggable. Version 1.0 (code 316, above
   upstream's 315).
 - **TV banner:** full-bleed like an Apple TV tile: `art/artemis-banner-wide.jpg` cropped to 16:9 (the full
   figure, centred) by `tools/banner-from-image.sh`, 320 × 180 and 640 × 360, no name or corners (the launcher adds

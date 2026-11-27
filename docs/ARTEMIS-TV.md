@@ -176,6 +176,10 @@ so the client asks for the TV's own mode, as the iPhone app (its screen's pixels
   figure, centred) by `tools/banner-from-image.sh`, 320 × 180 and 640 × 360, no name or corners (the launcher adds
   them). The launcher icon stays the iPhone's icon (`tools/icon-images.swift`).
 - **The PC list's side buttons** (Settings, Help, Add PC) get the same gold focus ring as the PC tiles.
+- **App cards** (a PC's apps): art, tile and gold focus ring share one rounded shape (12 dp): the card clips its
+  art to its outline and wears the ring over its own edge (`artemis_app_card_ring`, not the grid's selector), so
+  it lifts with the card and hugs the art. A running app gets a green dot under its card, as on the iPhone,
+  instead of upstream's play icon over the art.
 
 ## Tests
 
@@ -196,5 +200,9 @@ so the client asks for the TV's own mode, as the iPhone app (its screen's pixels
   chosen 720p30 stays. The debug build's `ArtemisFontProbe` (a broadcast receiver) measures every visible text in
   the app's windows against Orbix-with-system-digits; the check asks it on the session menu, PC list, resolution
   list, Settings (top and bottom, gold-ringed focused row), the licence, Add PC, its error dialog and a toast.
+  The debug build's `ArtemisAppGridProbe` (the app grid's own adapter, layout and focus lift, flat-colour box art,
+  one app running) is measured in a screenshot by `scripts/app-cards.py`: rounded art corners, nothing over the
+  art, the ring hugging the focused card with no background between, the running dot under the card.
+  `ARTEMIS_ONLY=cards scripts/check.sh emulator` runs just that.
   `ArtemisToastTest` (unit) fails on any plain `Toast.makeText` outside `ArtemisToast`.
 - `.mercurius/integrate.json` runs `scripts/check.sh build|unit|emulator`.

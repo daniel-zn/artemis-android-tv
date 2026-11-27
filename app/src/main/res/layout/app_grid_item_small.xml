@@ -1,29 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Artemis: an app card (art clipped to its rounded shape, the gold ring over its edge when focused) and, under it,
+     a green dot while the app is running, so nothing covers the art. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="100dp"
-    android:layout_height="133dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
     android:padding="5dp">
-    <ImageView
-        android:id="@+id/grid_image"
-        android:cropToPadding="false"
-        android:scaleType="fitXY"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-    </ImageView>
+    <FrameLayout
+        android:id="@+id/grid_card"
+        android:layout_width="90dp"
+        android:layout_height="120dp"
+        android:background="@drawable/artemis_app_card"
+        android:foreground="@drawable/artemis_app_card_ring">
+        <ImageView
+            android:id="@+id/grid_image"
+            android:scaleType="centerCrop"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+        </ImageView>
+        <TextView
+            android:id="@+id/grid_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="5dp"
+            android:gravity="center"
+            android:textSize="14sp">
+        </TextView>
+    </FrameLayout>
     <ImageView
         android:id="@+id/grid_overlay"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="10dp"
-        android:layout_width="33dp"
-        android:layout_height="33dp">
+        android:layout_width="8dp"
+        android:layout_height="8dp"
+        android:layout_marginTop="4dp"
+        android:src="@drawable/artemis_active_dot"
+        android:contentDescription="@string/artemis_app_active"
+        android:visibility="invisible">
     </ImageView>
-    <TextView
-        android:id="@+id/grid_text"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/grid_overlay"
-        android:layout_margin="5dp"
-        android:gravity="center"
-        android:textSize="14sp">
-    </TextView>
-</RelativeLayout>
+</LinearLayout>

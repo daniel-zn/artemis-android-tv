@@ -5,5 +5,7 @@
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="tv_channel_logo_width">80dp</dimen>
     <dimen name="tv_channel_logo_height">80dp</dimen>
+    <!-- Artemis: an app card's corners (art, tile and ring) -->
+    <dimen name="artemis_card_radius">12dp</dimen>
 
 </resources>

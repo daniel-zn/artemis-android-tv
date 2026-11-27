@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Artemis: the focused app card's gold ring (the grid marks its focused item selected), drawn over the card's own
+     edge so it hugs the art. A shape's stroke lies inside its bounds, so its outer edge follows the card's outline
+     when its radius is the card's less half the stroke (12 - 1.5). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:exitFadeDuration="@android:integer/config_shortAnimTime">
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="10.5dp"/>
+            <stroke android:width="3dp" android:color="@color/artemis_gold"/>
+        </shape>
+    </item>
+    <item android:drawable="@android:color/transparent"/>
+</selector>

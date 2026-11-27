@@ -4,7 +4,7 @@ import android.view.View;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 
-/** The focused PC or app in a grid lifts a little (with the gold ring from artemis_grid_selector). */
+/** The focused PC or app in a grid lifts a little (with its gold ring: artemis_grid_selector for PCs, artemis_app_card_ring for apps). */
 public final class FocusLift {
     public static final float LIFT = 1.08f;
 

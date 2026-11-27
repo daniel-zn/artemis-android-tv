@@ -165,14 +165,11 @@ public class AppGridAdapter extends GenericGridAdapter<AppView.AppObject> {
         // Let the cached asset loader handle it
         loader.populateImageView(obj.app, imgView, txtView);
 
-        if (obj.isRunning) {
-            // Show the play button overlay
-            overlayView.setImageResource(R.drawable.ic_play);
-            overlayView.setVisibility(View.VISIBLE);
-        }
-        else {
-            overlayView.setVisibility(View.GONE);
-        }
+        // Artemis: the art takes the card's rounded shape (artemis_app_card), the same outline as its focus ring
+        parentView.findViewById(R.id.grid_card).setClipToOutline(true);
+
+        // A running app gets a green dot under its card (invisible otherwise, so every row keeps its height)
+        overlayView.setVisibility(obj.isRunning ? View.VISIBLE : View.INVISIBLE);
 
         if (obj.isHidden) {
             parentView.setAlpha(0.40f);

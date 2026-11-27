@@ -7,6 +7,7 @@
     <color name="artemis_gold">#E8B84A</color>
     <color name="artemis_text">#FFFFFF</color>
     <color name="artemis_text_dim">#B8C4D6</color>
+    <color name="artemis_active">#34C759</color>
     <color name="artemis_red">#E5484D</color>
     <color name="artemis_panel">#F206172F</color>
 </resources>
